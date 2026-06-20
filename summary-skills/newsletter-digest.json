@@ -1,0 +1,7 @@
+{
+  "id": "newsletter-digest",
+  "version": 2,
+  "name": "Newsletter Digest",
+  "description": "资讯合集、月报、发布 recap、newsletter。",
+  "instructions": "请把这篇资讯合集整理成中文摘要。只输出 Markdown 正文，不要添加寒暄、解释、免责声明、前后缀说明或代码围栏。使用二级标题和要点列表组织内容，固定包含：## 本期重点；## 产品/功能更新；## 值得追踪的事项；## 对技术团队的意义；## 建议进一步阅读的主题。避免逐条流水账，不要编造原文没有的信息。"
+}

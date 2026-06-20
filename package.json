@@ -1,0 +1,62 @@
+{
+  "name": "rss-receiver",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "rss-receiver": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "summary-skills",
+    ".env.example",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && chmod +x dist/cli/index.js",
+    "setup": "tsx src/cli/index.ts setup",
+    "sync-sources": "tsx src/cli/index.ts sync-sources",
+    "run-once": "tsx src/cli/index.ts run-once",
+    "daemon": "tsx src/cli/index.ts daemon",
+    "summarize": "tsx src/cli/index.ts summarize",
+    "archive": "tsx src/cli/index.ts archive",
+    "sync-notion": "tsx src/cli/index.ts sync-notion",
+    "format-summary-blocks": "tsx src/cli/index.ts format-summary-blocks",
+    "serve": "tsx src/cli/index.ts serve",
+    "server:start": "tsx src/cli/index.ts server:start",
+    "server:status": "tsx src/cli/index.ts server:status",
+    "server:stop": "tsx src/cli/index.ts server:stop",
+    "server:restart": "tsx src/cli/index.ts server:restart",
+    "config": "tsx src/cli/index.ts config",
+    "debug": "node --inspect-brk --import tsx src/cli/index.ts",
+    "debug:run-once": "node --inspect-brk --import tsx src/cli/index.ts run-once",
+    "debug:summarize": "node --inspect-brk --import tsx src/cli/index.ts summarize",
+    "debug:serve": "node --inspect-brk --import tsx src/cli/index.ts serve",
+    "debug:config": "node --inspect-brk --import tsx src/cli/index.ts config",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@mozilla/readability": "^0.6.0",
+    "@tryfabric/martian": "^1.2.4",
+    "better-sqlite3": "^12.4.1",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.8.5",
+    "jsdom": "^25.0.1",
+    "node-cron": "^4.2.1",
+    "openai": "^6.42.0",
+    "pino": "^10.3.1",
+    "pino-roll": "^4.0.0",
+    "playwright": "^1.61.0",
+    "rss-parser": "^3.13.0",
+    "yaml": "^2.9.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.8"
+  }
+}

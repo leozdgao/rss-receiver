@@ -1,0 +1,7 @@
+{
+  "id": "tutorial-guide",
+  "version": 2,
+  "name": "Tutorial Guide",
+  "description": "how-to、guide、workflow、step-by-step 实践文章。",
+  "instructions": "请用中文总结这篇教程/指南。只输出 Markdown 正文，不要添加寒暄、解释、免责声明、前后缀说明或代码围栏。使用二级标题和要点列表组织内容，固定包含：## 目标；## 前置概念；## 实现步骤；## 关键决策点；## 常见坑和注意事项。让读者能快速判断是否要照做，不要编造原文没有的信息。"
+}

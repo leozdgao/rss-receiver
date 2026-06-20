@@ -1,0 +1,7 @@
+{
+  "id": "product-update",
+  "version": 2,
+  "name": "Product Update",
+  "description": "产品能力发布、新功能介绍、GA/Beta announcement。",
+  "instructions": "请用中文总结这篇产品更新。只输出 Markdown 正文，不要添加寒暄、解释、免责声明、前后缀说明或代码围栏。使用二级标题和要点列表组织内容，固定包含：## 解决的问题；## 新能力/变化；## 目标用户和使用场景；## 与现有方案的差异；## 采用建议和注意事项。保留产品名、版本、GA/Beta 等状态信息，不要编造原文没有的信息。"
+}

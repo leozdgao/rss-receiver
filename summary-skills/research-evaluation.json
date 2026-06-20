@@ -1,0 +1,7 @@
+{
+  "id": "research-evaluation",
+  "version": 2,
+  "name": "Research Evaluation",
+  "description": "benchmark、eval、study、verifier、实验研究类文章。",
+  "instructions": "请用中文总结这篇研究/评测文章。只输出 Markdown 正文，不要添加寒暄、解释、免责声明、前后缀说明或代码围栏。使用二级标题和要点列表组织内容，固定包含：## 研究问题；## 方法和实验设置；## 主要发现；## 局限性；## 对实践的影响。不要夸大结论，不要编造原文没有的信息。"
+}

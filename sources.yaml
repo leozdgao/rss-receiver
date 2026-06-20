@@ -1,0 +1,5 @@
+sources:
+  - name: LangChain Blog
+    url: https://www.langchain.com/blog/rss.xml
+  - name: OpenAI Blog
+    url: https://openai.com/news/rss.xml
