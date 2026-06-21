@@ -8,7 +8,7 @@ SQLite-first RSS receiver with optional Notion projection and LLM-powered articl
 - Optionally imports initial source configuration from Notion `RSS Feeds` when local SQLite sources are empty.
 - Fetches RSS/Atom entries, visits each article URL, stores raw HTML, and extracts readable text with Readability.
 - Generates summaries from SQLite article text through an OpenAI-compatible LLM provider.
-- Stores summary markdown and Notion block JSON in SQLite.
+- Stores summary markdown and summary metadata in SQLite.
 - Projects article indexes, statuses, summaries, and archive state to Notion when `NOTION_SYNC_ENABLED=true`.
 - Keeps external projection ids out of core tables: source mappings live in `source_integrations`, article mappings live in `article_integrations`.
 
@@ -27,6 +27,13 @@ RSS / article webpage -> SQLite -> summarize -> SQLite -> Notion projection
 Notion sync failures do not roll back SQLite changes. Failed Notion operations are written to SQLite `integration_outbox` and retried by `sync-notion`.
 
 There is no Notion-to-SQLite summary reconciliation in the normal flow.
+
+Desktop client planning lives in:
+
+- [Desktop product spec](docs/desktop/product-spec.md)
+- [Desktop UX spec](docs/desktop/ux-spec.md)
+- [Desktop core feature designs](docs/desktop/core-designs.md)
+- [Desktop local API contract](docs/desktop/api-contract.md)
 
 ## Setup
 
@@ -272,7 +279,6 @@ SQLite stores:
 - extraction status/failure reason
 - content hash
 - summary markdown
-- summary Notion blocks JSON
 - summary model/skill/version/classification metadata
 - article read/archive state
 - jobs

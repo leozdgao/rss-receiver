@@ -7,4 +7,5 @@ data/*.pid
 coverage/
 dist/
 logs/
+.codebase-memory/
 .DS_Store
