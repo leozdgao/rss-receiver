@@ -1,273 +1,48 @@
 import type { FeedConfig } from "../../domain/rss/rss.js";
+import {
+  applyNotionArticleOperations,
+  type ArticleIndexInput,
+  type ArticleIndexPage
+} from "../integrations/notion/articles.js";
+import {
+  applyNotionArchiveOperations,
+  type ArchiveCandidate
+} from "../integrations/notion/archives.js";
+import { applyNotionFeedOperations } from "../integrations/notion/feeds.js";
+import { applyNotionSetupOperations, type NotionSetupResult } from "../integrations/notion/setup.js";
 import type { AppConfig } from "../env/config.js";
-import { markdownToNotionBlocks } from "./markdown.js";
 
 export type JsonObject = Record<string, unknown>;
+export type { ArticleIndexInput, ArticleIndexPage, ArchiveCandidate };
 
-export type ArticleIndexInput = {
-  title: string;
-  url: string;
-  feedName: string;
-  contentId: number;
-  publishedAt?: string;
-  extractionStatus: "Success" | "Failed";
-};
-
-export type ArchiveCandidate = {
-  pageId: string;
-  contentId?: number;
-  title: string;
-  url?: string;
-  feedName?: string;
-  status: "Unread" | "Read" | "Archived";
-  publishedAt?: string;
-  createdTime?: string;
-  readAt?: string;
-  removeFromNotionAt?: string;
-  summaryModel?: string;
-  summarySkill?: string;
-  summarySkillVersion?: number;
-};
-
-export type ArticleIndexPage = {
-  pageId: string;
-  contentId?: number;
-  title?: string;
-  url?: string;
-  status?: "Unread" | "Read" | "Archived";
-};
-
-export class NotionClient {
-  private baseUrl = "https://api.notion.com";
-
-  constructor(private config: AppConfig) {}
-
-  async setup(parentPageId?: string): Promise<{
-    parentPageId: string;
-    feedsDataSourceId: string;
-    articlesDataSourceId: string;
-    archivedArticlesDataSourceId: string;
-  }> {
-    const setupPageId = parentPageId ?? (await this.createWorkspacePage("RSS Receiver"));
-    const feeds = await this.createCollection("RSS Feeds", {
-      Name: { title: {} },
-      URL: { url: {} },
-      Enabled: { checkbox: {} },
-      Category: { select: { options: [] } },
-      "Summary Skill": { rich_text: {} },
-      "Last Checked At": { date: {} },
-      "Last Error": { rich_text: {} }
-    }, setupPageId);
-
-    const articles = await this.createCollection("RSS Articles", {
-      Title: { title: {} },
-      URL: { url: {} },
-      Feed: { rich_text: {} },
-      "Content ID": { number: {} },
-      "Published At": { date: {} },
-      Status: {
-        select: {
-          options: [
-            { name: "Unread", color: "blue" },
-            { name: "Read", color: "green" },
-            { name: "Archived", color: "gray" }
-          ]
-        }
-      },
-      "Extraction Status": {
-        select: {
-          options: [
-            { name: "Success", color: "green" },
-            { name: "Failed", color: "red" }
-          ]
-        }
-      },
-      "Summary Status": {
-        select: {
-          options: [
-            { name: "Pending", color: "yellow" },
-            { name: "Done", color: "green" },
-            { name: "Failed", color: "red" }
-          ]
-        }
-      },
-      "Summary Model": { rich_text: {} },
-      "Summary Skill": { rich_text: {} },
-      "Summary Skill Version": { number: {} },
-      "Summary Classification Reason": { rich_text: {} },
-      "Summarized At": { date: {} },
-      "Read At": { date: {} },
-      "Remove From Notion At": { date: {} }
-    }, setupPageId);
-    const archivedArticles = await this.createArchivedArticlesDataSource(setupPageId);
-
-    return {
-      parentPageId: setupPageId,
-      feedsDataSourceId: feeds,
-      articlesDataSourceId: articles,
-      archivedArticlesDataSourceId: archivedArticles
-    };
-  }
-
-  async createArchivedArticlesDataSource(parentPageId: string): Promise<string> {
-    return this.createCollection("RSS Archived Articles", archivedArticleProperties(), parentPageId);
-  }
-
-  async listEnabledFeeds(dataSourceId: string): Promise<FeedConfig[]> {
-    const pages = await this.queryCollection(dataSourceId, {
-      filter: {
-        property: "Enabled",
-        checkbox: { equals: true }
-      }
-    });
-
-    return pages
-      .map((page) => {
-        const properties = (page.properties ?? {}) as JsonObject;
-        const url = readUrl(properties.URL);
-        const name = readTitle(properties.Name) ?? url;
-        if (!url || !name) return undefined;
-
-        const feed: FeedConfig = {
-          pageId: String(page.id),
-          name,
-          url,
-          summarySkill: readRichText(properties["Summary Skill"])
-        };
-        return feed;
-      })
-      .filter((feed): feed is FeedConfig => Boolean(feed));
-  }
-
-  async updateFeedSuccess(pageId: string): Promise<void> {
-    await this.patchPage(pageId, {
-      "Last Checked At": { date: { start: new Date().toISOString() } },
-      "Last Error": { rich_text: [] }
-    });
-  }
-
-  async updateFeedError(pageId: string, error: unknown): Promise<void> {
-    await this.patchPage(pageId, {
-      "Last Checked At": { date: { start: new Date().toISOString() } },
-      "Last Error": { rich_text: richText(error instanceof Error ? error.message : String(error)) }
-    });
-  }
-
-  async createArticleIndex(dataSourceId: string, input: ArticleIndexInput): Promise<string> {
-    const properties: JsonObject = {
-      Title: title(input.title),
-      URL: { url: input.url },
-      Feed: { rich_text: richText(input.feedName) },
-      "Content ID": { number: input.contentId },
-      Status: { select: { name: "Unread" } },
-      "Extraction Status": { select: { name: input.extractionStatus } },
-      "Summary Status": {
-        select: { name: input.extractionStatus === "Success" ? "Pending" : "Failed" }
-      }
-    };
-
-    if (input.publishedAt) {
-      properties["Published At"] = { date: { start: input.publishedAt } };
-    }
-
-    const page = await this.createPage(dataSourceId, properties);
-    return String(page.id);
-  }
-
-  async updateArticleIndexMirror(
+export interface NotionClient {
+  setup(parentPageId?: string): Promise<NotionSetupResult>;
+  createArchivedArticlesDataSource(parentPageId: string): Promise<string>;
+  listEnabledFeeds(dataSourceId: string): Promise<FeedConfig[]>;
+  updateFeedSuccess(pageId: string): Promise<void>;
+  updateFeedError(pageId: string, error: unknown): Promise<void>;
+  createArticleIndex(dataSourceId: string, input: ArticleIndexInput): Promise<string>;
+  updateArticleIndexMirror(
     pageId: string,
     input: ArticleIndexInput,
     status: "Unread" | "Read" | "Archived",
     summaryStatus: "Pending" | "Failed" | "Done",
     readAt?: string
-  ): Promise<void> {
-    const properties: JsonObject = {
-      Title: title(input.title),
-      URL: { url: input.url },
-      Feed: { rich_text: richText(input.feedName) },
-      "Content ID": { number: input.contentId },
-      Status: { select: { name: status } },
-      "Extraction Status": { select: { name: input.extractionStatus } },
-      "Summary Status": { select: { name: summaryStatus } }
-    };
-    properties["Published At"] = input.publishedAt ? { date: { start: input.publishedAt } } : { date: null };
-    if (readAt) properties["Read At"] = { date: { start: readAt } };
-    await this.patchPage(pageId, properties);
-  }
-
-  async updateArticleStatus(pageId: string, status: "Unread" | "Read" | "Archived", readAt?: string): Promise<void> {
-    const properties: JsonObject = {
-      Status: { select: { name: status } }
-    };
-    if (readAt) properties["Read At"] = { date: { start: readAt } };
-    await this.patchPage(pageId, properties);
-  }
-
-  async listArticleIndexPages(dataSourceId: string): Promise<ArticleIndexPage[]> {
-    const pages = await this.queryCollection(dataSourceId, {});
-    return pages.map((page): ArticleIndexPage => {
-      const properties = (page.properties ?? {}) as JsonObject;
-      const status = readSelect(properties.Status);
-      return {
-        pageId: String(page.id),
-        contentId: readNumber(properties["Content ID"]),
-        title: readTitle(properties.Title),
-        url: readUrl(properties.URL),
-        status: status === "Read" || status === "Archived" ? status : status === "Unread" ? "Unread" : undefined
-      };
-    });
-  }
-
-  async ensureArchivedArticleProperties(dataSourceId: string): Promise<void> {
-    await this.updateCollectionProperties(dataSourceId, archivedArticleProperties());
-  }
-
-  async archiveArticleIndex(
-    pageId: string,
-    input: {
-      removeFromNotionAt: string;
-    }
-  ): Promise<void> {
-    await this.patchPage(pageId, {
-      Status: { select: { name: "Archived" } },
-      "Remove From Notion At": { date: { start: input.removeFromNotionAt } }
-    });
-  }
-
-  async removeArticleIndexFromNotion(pageId: string): Promise<void> {
-    await this.request("PATCH", `/v1/pages/${pageId}`, { in_trash: true });
-  }
-
-  async createArchivedArticle(
+  ): Promise<void>;
+  updateArticleStatus(pageId: string, status: "Unread" | "Read" | "Archived", readAt?: string): Promise<void>;
+  listArticleIndexPages(dataSourceId: string): Promise<ArticleIndexPage[]>;
+  ensureArchivedArticleProperties(dataSourceId: string): Promise<void>;
+  archiveArticleIndex(pageId: string, input: { removeFromNotionAt: string }): Promise<void>;
+  removeArticleIndexFromNotion(pageId: string): Promise<void>;
+  createArchivedArticle(
     dataSourceId: string,
     article: ArchiveCandidate,
     input: {
       archivedAt: string;
       reason: "Read expired" | "Unread expired";
     }
-  ): Promise<string> {
-    const properties: JsonObject = {
-      Title: title(article.title),
-      "Content ID": article.contentId ? { number: article.contentId } : { number: null },
-      "Original Status": { select: { name: article.status } },
-      "Archived At": { date: { start: input.archivedAt } },
-      "Archive Reason": { select: { name: input.reason } },
-      "Original Notion Page": { rich_text: richText(article.pageId) }
-    };
-    if (article.url) properties.URL = { url: article.url };
-    if (article.feedName) properties.Feed = { rich_text: richText(article.feedName) };
-    if (article.publishedAt) properties["Published At"] = { date: { start: article.publishedAt } };
-    if (article.readAt) properties["Read At"] = { date: { start: article.readAt } };
-    if (article.summaryModel) properties["Summary Model"] = { rich_text: richText(article.summaryModel) };
-    if (article.summarySkill) properties["Summary Skill"] = { rich_text: richText(article.summarySkill) };
-    if (article.summarySkillVersion) properties["Summary Skill Version"] = { number: article.summarySkillVersion };
-
-    const children = await this.getAppendablePageChildren(article.pageId);
-    const page = await this.createPage(dataSourceId, properties, children);
-    return String(page.id);
-  }
-
-  async saveSummary(
+  ): Promise<string>;
+  saveSummary(
     pageId: string,
     summary: string,
     model: string,
@@ -276,36 +51,16 @@ export class NotionClient {
       skillVersion?: number;
       classificationReason?: string;
     }
-  ): Promise<void> {
-    await this.replacePageContent(pageId, markdownToNotionBlocks(summary));
-    const properties: JsonObject = {
-      "Summary Status": { select: { name: "Done" } },
-      "Summary Model": { rich_text: richText(model) },
-      "Summarized At": { date: { start: new Date().toISOString() } }
-    };
-    if (metadata?.skillId) properties["Summary Skill"] = { rich_text: richText(metadata.skillId) };
-    if (metadata?.skillVersion) properties["Summary Skill Version"] = { number: metadata.skillVersion };
-    if (metadata?.classificationReason) {
-      properties["Summary Classification Reason"] = { rich_text: richText(metadata.classificationReason) };
-    }
-    await this.patchPage(pageId, properties);
-  }
+  ): Promise<void>;
+  markSummaryFailed(pageId: string, error: unknown): Promise<void>;
+}
 
-  async markSummaryFailed(pageId: string, error: unknown): Promise<void> {
-    await this.replacePageContent(pageId, [
-      headingBlock("Summary Failed"),
-      paragraphBlock(error instanceof Error ? error.message : String(error))
-    ]);
-    await this.patchPage(pageId, {
-      "Summary Status": { select: { name: "Failed" } }
-    });
-  }
+export class NotionClient {
+  private baseUrl = "https://api.notion.com";
 
-  private async createCollection(
-    titleValue: string,
-    properties: JsonObject,
-    parentPageId: string
-  ): Promise<string> {
+  constructor(private config: AppConfig) {}
+
+  async createCollection(titleValue: string, properties: JsonObject, parentPageId: string): Promise<string> {
     const modernBody = {
       parent: { type: "page_id", page_id: parentPageId },
       title: [{ type: "text", text: { content: titleValue } }],
@@ -328,7 +83,7 @@ export class NotionClient {
     }
   }
 
-  private async updateCollectionProperties(dataSourceId: string, properties: JsonObject): Promise<void> {
+  async updateCollectionProperties(dataSourceId: string, properties: JsonObject): Promise<void> {
     try {
       await this.request("PATCH", `/v1/data_sources/${dataSourceId}`, { properties });
     } catch {
@@ -336,21 +91,13 @@ export class NotionClient {
     }
   }
 
-  private async createWorkspacePage(titleValue: string): Promise<string> {
+  async createWorkspacePage(titleValue: string, children: JsonObject[] = []): Promise<string> {
     const page = await this.request("POST", "/v1/pages", {
       parent: { type: "workspace", workspace: true },
       properties: {
         title: title(titleValue)
       },
-      children: [
-        {
-          object: "block",
-          type: "paragraph",
-          paragraph: {
-            rich_text: richText("RSS Receiver setup page. The feed and article data sources live below this page.")
-          }
-        }
-      ]
+      ...(children.length ? { children } : {})
     });
 
     const id = page.id as string | undefined;
@@ -358,7 +105,7 @@ export class NotionClient {
     return id;
   }
 
-  private async queryCollection(dataSourceId: string, body: JsonObject): Promise<JsonObject[]> {
+  async queryCollection(dataSourceId: string, body: JsonObject): Promise<JsonObject[]> {
     try {
       return await this.queryAll(`/v1/data_sources/${dataSourceId}/query`, body);
     } catch {
@@ -366,7 +113,7 @@ export class NotionClient {
     }
   }
 
-  private async queryAll(path: string, body: JsonObject): Promise<JsonObject[]> {
+  async queryAll(path: string, body: JsonObject): Promise<JsonObject[]> {
     const results: JsonObject[] = [];
     let cursor: string | undefined;
 
@@ -383,7 +130,7 @@ export class NotionClient {
     return results;
   }
 
-  private async createPage(dataSourceId: string, properties: JsonObject, children?: JsonObject[]): Promise<JsonObject> {
+  async createPage(dataSourceId: string, properties: JsonObject, children?: JsonObject[]): Promise<JsonObject> {
     try {
       return await this.request("POST", "/v1/pages", {
         parent: { type: "data_source_id", data_source_id: dataSourceId },
@@ -399,11 +146,11 @@ export class NotionClient {
     }
   }
 
-  private async patchPage(pageId: string, properties: JsonObject): Promise<void> {
+  async patchPage(pageId: string, properties: JsonObject): Promise<void> {
     await this.request("PATCH", `/v1/pages/${pageId}`, { properties });
   }
 
-  private async appendPageContent(pageId: string, children: JsonObject[]): Promise<void> {
+  async appendPageContent(pageId: string, children: JsonObject[]): Promise<void> {
     for (let index = 0; index < children.length; index += 100) {
       await this.request("PATCH", `/v1/blocks/${pageId}/children`, {
         children: children.slice(index, index + 100)
@@ -411,7 +158,7 @@ export class NotionClient {
     }
   }
 
-  private async replacePageContent(pageId: string, children: JsonObject[]): Promise<void> {
+  async replacePageContent(pageId: string, children: JsonObject[]): Promise<void> {
     const existingBlocks = await this.listBlockChildren(pageId);
     for (const block of existingBlocks) {
       await this.request("DELETE", `/v1/blocks/${block.id}`);
@@ -419,7 +166,7 @@ export class NotionClient {
     await this.appendPageContent(pageId, children);
   }
 
-  private async listBlockChildren(blockId: string): Promise<JsonObject[]> {
+  async listBlockChildren(blockId: string): Promise<JsonObject[]> {
     const results: JsonObject[] = [];
     let cursor: string | undefined;
 
@@ -437,13 +184,13 @@ export class NotionClient {
     return results;
   }
 
-  private async getAppendablePageChildren(pageId: string): Promise<JsonObject[]> {
+  async getAppendablePageChildren(pageId: string): Promise<JsonObject[]> {
     return (await this.listBlockChildren(pageId))
       .map((block) => toAppendableBlock(block))
       .filter((block): block is JsonObject => Boolean(block));
   }
 
-  private async request(method: string, path: string, body?: unknown): Promise<JsonObject> {
+  async request(method: string, path: string, body?: unknown): Promise<JsonObject> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.notionRequestTimeoutMs);
 
@@ -476,44 +223,16 @@ export class NotionClient {
   }
 }
 
+applyNotionSetupOperations(NotionClient);
+applyNotionFeedOperations(NotionClient);
+applyNotionArticleOperations(NotionClient);
+applyNotionArchiveOperations(NotionClient);
+
 function extractCollectionId(response: JsonObject): string {
   const dataSources = response.data_sources as Array<{ id?: string }> | undefined;
   const id = dataSources?.[0]?.id ?? (response.id as string | undefined);
   if (!id) throw new Error("Could not find created Notion data source id.");
   return id;
-}
-
-function archivedArticleProperties(): JsonObject {
-  return {
-    Title: { title: {} },
-    URL: { url: {} },
-    Feed: { rich_text: {} },
-    "Content ID": { number: {} },
-    "Published At": { date: {} },
-    "Original Status": {
-      select: {
-        options: [
-          { name: "Unread", color: "blue" },
-          { name: "Read", color: "green" },
-          { name: "Archived", color: "gray" }
-        ]
-      }
-    },
-    "Read At": { date: {} },
-    "Archived At": { date: {} },
-    "Archive Reason": {
-      select: {
-        options: [
-          { name: "Read expired", color: "green" },
-          { name: "Unread expired", color: "yellow" }
-        ]
-      }
-    },
-    "Summary Model": { rich_text: {} },
-    "Summary Skill": { rich_text: {} },
-    "Summary Skill Version": { number: {} },
-    "Original Notion Page": { rich_text: {} }
-  };
 }
 
 function title(value: string): JsonObject {
@@ -522,63 +241,8 @@ function title(value: string): JsonObject {
   };
 }
 
-function richText(value: string): JsonObject[] {
-  const chunks: JsonObject[] = [];
-  let remaining = value;
-  while (remaining.length > 0 && chunks.length < 100) {
-    const chunk = remaining.slice(0, 2000);
-    chunks.push({ type: "text", text: { content: chunk } });
-    remaining = remaining.slice(2000);
-  }
-  return chunks;
-}
-
-function headingBlock(value: string): JsonObject {
-  return {
-    object: "block",
-    type: "heading_2",
-    heading_2: {
-      rich_text: richText(value)
-    }
-  };
-}
-
-function paragraphBlock(value: string): JsonObject {
-  return {
-    object: "block",
-    type: "paragraph",
-    paragraph: {
-      rich_text: richText(value)
-    }
-  };
-}
-
 function truncate(value: string, length: number): string {
   return value.length > length ? value.slice(0, length - 1) : value;
-}
-
-function readTitle(property: unknown): string | undefined {
-  const titleItems = (property as { title?: Array<{ plain_text?: string }> })?.title;
-  return titleItems?.map((item) => item.plain_text ?? "").join("").trim() || undefined;
-}
-
-function readRichText(property: unknown): string | undefined {
-  const richTextItems = (property as { rich_text?: Array<{ plain_text?: string }> })?.rich_text;
-  return richTextItems?.map((item) => item.plain_text ?? "").join("").trim() || undefined;
-}
-
-function readUrl(property: unknown): string | undefined {
-  const value = (property as { url?: string | null })?.url;
-  return value?.trim() || undefined;
-}
-
-function readNumber(property: unknown): number | undefined {
-  const value = (property as { number?: number | null })?.number;
-  return typeof value === "number" ? value : undefined;
-}
-
-function readSelect(property: unknown): string | undefined {
-  return (property as { select?: { name?: string } | null })?.select?.name;
 }
 
 function toAppendableBlock(block: JsonObject): JsonObject | undefined {
