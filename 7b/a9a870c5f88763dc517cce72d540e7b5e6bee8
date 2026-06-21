@@ -1,0 +1,27 @@
+src/infra/integrations/notion/outbox-replay.ts
+  s_6108d554e617c6::t_5085b0d9616a0a 1-108
+src/infra/integrations/notion/sync.ts
+  s_6108d554e617c6::t_5085b0d9616a0a 2-3,5-8,89,95,106,118,136-140,143-145,148
+src/infra/integrations/notion/article-mirror.ts
+  s_6108d554e617c6::t_5085b0d9616a0a 1-240
+src/infra/integrations/notion/summary-projection.ts
+  s_6108d554e617c6::t_5085b0d9616a0a 1-30
+src/infra/integrations/notion/archive-projection.ts
+  s_6108d554e617c6::t_5085b0d9616a0a 1-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "7ba9a870c5f88763dc517cce72d540e7b5e6bee8",
+  "prompts": {},
+  "sessions": {
+    "s_6108d554e617c6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ee9b8-37e7-7ed3-a725-bad5f8d9b614",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
