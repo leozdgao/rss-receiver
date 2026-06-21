@@ -1,0 +1,30 @@
+docs/desktop/api-contract.md
+  s_2d93eaf55c05ff::t_cf1ae8072d7912 1-516
+README.md
+  s_2d93eaf55c05ff::t_c5f5dcb670ce2e 11,31-34,36-37
+  s_2d93eaf55c05ff::t_ff01b2efa14565 35
+docs/desktop/product-spec.md
+  s_2d93eaf55c05ff::t_cf1ae8072d7912 1-286
+docs/desktop/core-designs.md
+  s_2d93eaf55c05ff::t_ed2ee0eb83e0fb 1-569
+.gitignore
+  s_2d93eaf55c05ff::t_40380a69ca5276 10
+docs/desktop/ux-spec.md
+  s_2d93eaf55c05ff::t_cf1ae8072d7912 1-382
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "402d4899bd37e4be6ee1929e5eb853c5e88dcded",
+  "prompts": {},
+  "sessions": {
+    "s_2d93eaf55c05ff": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea844-b602-7923-a161-f2d968955b9f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
