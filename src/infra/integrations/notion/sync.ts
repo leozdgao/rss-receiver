@@ -6,6 +6,7 @@ import {
 } from "../../notion/notion.js";
 import type { OutboxItem, Source, Storage, StoredArticle } from "../../sqlite/storage.js";
 import { logError, logInfo } from "../../../shared/logger.js";
+import { markdownToNotionBlocks } from "./formatting.js";
 
 export type IntegrationResult = {
   ok: boolean;
@@ -116,7 +117,7 @@ export async function syncSummary(config: AppConfig, storage: Storage, articleId
     const summary = storage.getSummary(articleId);
     if (!summary) throw new Error(`Article ${articleId} has no SQLite summary.`);
     if (!refreshed.notionPageId) throw new Error(`Article ${articleId} has no Notion page id.`);
-    await new NotionClient(config).saveSummary(refreshed.notionPageId, summary.markdown, summary.model, {
+    await new NotionClient(config).saveSummary(refreshed.notionPageId, markdownToNotionBlocks(summary.markdown), summary.model, {
       skillId: summary.skill,
       skillVersion: summary.skillVersion,
       classificationReason: summary.classificationReason
@@ -305,7 +306,7 @@ async function replayOutboxItem(config: AppConfig, storage: Storage, item: Outbo
     const summary = storage.getSummary(articleId);
     if (!summary) throw new Error(`Article ${articleId} has no SQLite summary.`);
     if (!refreshed.notionPageId) throw new Error(`Article ${articleId} has no Notion page id.`);
-    await new NotionClient(config).saveSummary(refreshed.notionPageId, summary.markdown, summary.model, {
+    await new NotionClient(config).saveSummary(refreshed.notionPageId, markdownToNotionBlocks(summary.markdown), summary.model, {
       skillId: summary.skill,
       skillVersion: summary.skillVersion,
       classificationReason: summary.classificationReason

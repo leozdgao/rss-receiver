@@ -1,4 +1,3 @@
-import { markdownToNotionBlocks } from "../../notion/markdown.js";
 import type { JsonObject } from "../../notion/notion.js";
 
 export type ArticleIndexInput = {
@@ -41,7 +40,7 @@ export type NotionArticleClient = NotionArticleApi & {
   removeArticleIndexFromNotion(pageId: string): Promise<void>;
   saveSummary(
     pageId: string,
-    summary: string,
+    blocks: JsonObject[],
     model: string,
     metadata?: {
       skillId?: string;
@@ -89,7 +88,7 @@ export function applyNotionArticleOperations(Client: { prototype: NotionArticleC
   };
   Client.prototype.saveSummary = function (
     pageId: string,
-    summary: string,
+    blocks: JsonObject[],
     model: string,
     metadata?: {
       skillId?: string;
@@ -97,7 +96,7 @@ export function applyNotionArticleOperations(Client: { prototype: NotionArticleC
       classificationReason?: string;
     }
   ): Promise<void> {
-    return saveSummary(this, pageId, summary, model, metadata);
+    return saveSummary(this, pageId, blocks, model, metadata);
   };
   Client.prototype.markSummaryFailed = function (pageId: string, error: unknown): Promise<void> {
     return markSummaryFailed(this, pageId, error);
@@ -199,7 +198,7 @@ export async function removeArticleIndexFromNotion(notion: NotionArticleApi, pag
 export async function saveSummary(
   notion: NotionArticleApi,
   pageId: string,
-  summary: string,
+  blocks: JsonObject[],
   model: string,
   metadata?: {
     skillId?: string;
@@ -207,7 +206,7 @@ export async function saveSummary(
     classificationReason?: string;
   }
 ): Promise<void> {
-  await notion.replacePageContent(pageId, markdownToNotionBlocks(summary));
+  await notion.replacePageContent(pageId, blocks);
   const properties: JsonObject = {
     "Summary Status": { select: { name: "Done" } },
     "Summary Model": { rich_text: richText(model) },

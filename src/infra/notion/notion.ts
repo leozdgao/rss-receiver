@@ -44,7 +44,7 @@ export interface NotionClient {
   ): Promise<string>;
   saveSummary(
     pageId: string,
-    summary: string,
+    blocks: JsonObject[],
     model: string,
     metadata?: {
       skillId?: string;

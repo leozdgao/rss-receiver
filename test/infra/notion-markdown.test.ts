@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { markdownToNotionBlocks } from "../../src/infra/notion/markdown.js";
+import { markdownToNotionBlocks } from "../../src/infra/integrations/notion/formatting.js";
 
 describe("markdownToNotionBlocks", () => {
   it("converts common markdown structure to Notion blocks", () => {
