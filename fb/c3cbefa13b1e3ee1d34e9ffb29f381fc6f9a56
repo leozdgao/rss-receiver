@@ -1,0 +1,27 @@
+src/infra/sqlite/article-integrations-repository.ts
+  s_0630fc5f4c9764::t_068e2773428b6f 1-64
+src/infra/sqlite/article-records-repository.ts
+  s_0630fc5f4c9764::t_068e2773428b6f 1-190
+src/infra/sqlite/articles-repository.ts
+  s_0630fc5f4c9764::t_f61144337f2a7a 2-5,22-32,35,39,43,47,51,55,59,63,67,71,75,79,83,87,96,100,104,108,112,116,120,124,128,132,136
+src/infra/sqlite/article-summaries-repository.ts
+  s_0630fc5f4c9764::t_068e2773428b6f 1-132
+src/infra/sqlite/article-contents-repository.ts
+  s_0630fc5f4c9764::t_068e2773428b6f 1-119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "fbc3cbefa13b1e3ee1d34e9ffb29f381fc6f9a56",
+  "prompts": {},
+  "sessions": {
+    "s_0630fc5f4c9764": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ee9b8-37db-7823-8695-ef725b08884b",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
