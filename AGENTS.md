@@ -115,8 +115,8 @@ Summary generation lives in `src/app/summary-runner.ts`.
 - Missing LLM key/model must fail fast.
 - Summary skill selection is handled by the Summary Agent and LLM classifier unless a source config specifies a skill.
 - `article_summaries.markdown` stores generated markdown.
-- `article_summaries.notion_blocks_json` stores the Notion blocks projection.
-- `syncSummary` should prefer `notion_blocks_json` when projecting to Notion so reconciled/generated block structure is preserved.
+- Notion blocks are generated from markdown inside the Notion integration during summary projection.
+- Summary generation should not import Notion modules.
 
 Do not reintroduce Notion-to-SQLite summary reconciliation. `summary-reconcile` was intentionally removed. Notion is a mirror, not a source of truth.
 
@@ -197,7 +197,7 @@ sqlite3 data/rss-receiver.sqlite "SELECT id,type,status,trigger,parent_job_id,er
   - infrastructure: `src/infra`
   - HTTP/service/process: `src/service`
   - shared helpers: `src/shared`
-- Keep Notion-specific behavior in `src/infra/notion` or `src/app/notion-sync.ts`.
+- Keep Notion-specific behavior in `src/infra/notion` or `src/infra/integrations/notion`.
 - Keep SQLite schema and query behavior in `src/infra/sqlite/storage.ts`.
 - Add tests for behavior changes, especially storage selection logic and sync edge cases.
 

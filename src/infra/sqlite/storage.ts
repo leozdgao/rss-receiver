@@ -1,163 +1,55 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
+import type {
+  ArchiveCandidate,
+  ArticleStatus,
+  ExtractionInput,
+  ExtractionStatus,
+  FeedImportState,
+  JobInput,
+  JobStatus,
+  JobType,
+  OutboxInput,
+  OutboxItem,
+  OutboxStatus,
+  PendingContent,
+  Source,
+  SourceInput,
+  SourceIntegration,
+  StoredArticle,
+  StoredArticleInput,
+  StoredJob,
+  StoredSummary,
+  SummarizableArticle,
+  SummaryInput,
+  SummaryStatus
+} from "./types.js";
 
-export type ArticleStatus = "Unread" | "Read" | "Archived";
-export type ExtractionStatus = "Success" | "Failed";
-export type SummaryStatus = "Pending" | "Failed" | "Done";
-export type OutboxStatus = "Pending" | "Processing" | "Done" | "Failed";
-export type JobStatus = "queued" | "running" | "done" | "failed";
-export type JobType = "run-once" | "summarize" | "archive" | "format-summary-blocks" | "sync-notion";
-
-export type SourceInput = {
-  name: string;
-  url: string;
-  enabled: boolean;
-  category?: string;
-  summarySkill?: string;
-};
-
-export type Source = SourceInput & {
-  id: number;
-  lastCheckedAt?: string;
-  lastError?: string;
-};
-
-export type FeedImportState = {
-  articleCount: number;
-  latestPublishedAt?: string;
-};
-
-export type SourceIntegration = {
-  sourceId: number;
-  integration: "notion";
-  externalId: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type StoredArticleInput = {
-  sourceId: number;
-  feedTitle: string;
-  feedUrl: string;
-  externalId: string;
-  url: string;
-  title: string;
-  author?: string;
-  publishedAt?: string;
-  feedExcerpt?: string;
-  contentHash: string;
-};
-
-export type ExtractionInput = {
-  articleId: number;
-  rawHtml?: string;
-  readabilityHtml?: string;
-  textContent?: string;
-  byline?: string;
-  siteName?: string;
-  excerpt?: string;
-  status: ExtractionStatus;
-  failureReason?: string;
-};
-
-export type StoredArticle = StoredArticleInput & {
-  id: number;
-  status: ArticleStatus;
-  readAt?: string;
-  archivedAt?: string;
-  archiveReason?: string;
-  removeFromProjectionAt?: string;
-  summaryStatus: SummaryStatus;
-  notionPageId?: string;
-  notionArchivePageId?: string;
-  notionRemovedAt?: string;
-  notionRemoveReason?: string;
-};
-
-export type PendingContent = {
-  articleId: number;
-  notionPageId?: string;
-  feedTitle: string;
-  feedUrl: string;
-  title: string;
-  url: string;
-  author?: string;
-  publishedAt?: string;
-  feedExcerpt?: string;
-  textContent: string;
-};
-
-export type SummaryInput = {
-  articleId: number;
-  markdown: string;
-  notionBlocksJson: string;
-  model: string;
-  skill: string;
-  skillVersion: number;
-  classificationReason?: string;
-  summarizedAt: string;
-};
-
-export type StoredSummary = SummaryInput;
-
-export type SummarizableArticle = PendingContent & {
-  summaryStatus: SummaryStatus;
-  summarySkill?: string;
-  summarySkillVersion?: number;
-};
-
-export type ArchiveCandidate = StoredArticle & {
-  createdAt: string;
-  extractionStatus?: ExtractionStatus;
-  summaryModel?: string;
-  summarySkill?: string;
-  summarySkillVersion?: number;
-};
-
-export type OutboxInput = {
-  integration: "notion";
-  operation: string;
-  entityType: string;
-  entityId: string | number;
-  payload: unknown;
-  nextRetryAt?: string;
-  error?: unknown;
-};
-
-export type OutboxItem = {
-  id: number;
-  integration: "notion";
-  operation: string;
-  entityType: string;
-  entityId: string;
-  payload: unknown;
-  status: OutboxStatus;
-  attemptCount: number;
-  lastError?: string;
-  nextRetryAt?: string;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type JobInput = {
-  type: JobType;
-  trigger?: string;
-  parentJobId?: string;
-};
-
-export type StoredJob = {
-  id: string;
-  type: JobType;
-  status: JobStatus;
-  trigger?: string;
-  parentJobId?: string;
-  createdAt: string;
-  startedAt?: string;
-  finishedAt?: string;
-  result?: unknown;
-  error?: string;
-};
+export type {
+  ArchiveCandidate,
+  ArticleStatus,
+  ExtractionInput,
+  ExtractionStatus,
+  FeedImportState,
+  JobInput,
+  JobStatus,
+  JobType,
+  OutboxInput,
+  OutboxItem,
+  OutboxStatus,
+  PendingContent,
+  Source,
+  SourceInput,
+  SourceIntegration,
+  StoredArticle,
+  StoredArticleInput,
+  StoredJob,
+  StoredSummary,
+  SummarizableArticle,
+  SummaryInput,
+  SummaryStatus
+} from "./types.js";
 
 export class Storage {
   private db: Database.Database;
@@ -251,7 +143,6 @@ export class Storage {
       CREATE TABLE IF NOT EXISTS article_summaries (
         article_id INTEGER PRIMARY KEY,
         markdown TEXT NOT NULL,
-        notion_blocks_json TEXT NOT NULL,
         model TEXT NOT NULL,
         skill TEXT NOT NULL,
         skill_version INTEGER NOT NULL,
@@ -864,13 +755,12 @@ export class Storage {
     this.db
       .prepare(`
         INSERT INTO article_summaries (
-          article_id, markdown, notion_blocks_json, model, skill, skill_version, classification_reason, summarized_at
+          article_id, markdown, model, skill, skill_version, classification_reason, summarized_at
         ) VALUES (
-          @articleId, @markdown, @notionBlocksJson, @model, @skill, @skillVersion, @classificationReason, @summarizedAt
+          @articleId, @markdown, @model, @skill, @skillVersion, @classificationReason, @summarizedAt
         )
         ON CONFLICT(article_id) DO UPDATE SET
           markdown = excluded.markdown,
-          notion_blocks_json = excluded.notion_blocks_json,
           model = excluded.model,
           skill = excluded.skill,
           skill_version = excluded.skill_version,
@@ -907,7 +797,6 @@ export class Storage {
     return {
       articleId: Number(row.article_id),
       markdown: String(row.markdown),
-      notionBlocksJson: String(row.notion_blocks_json),
       model: String(row.model),
       skill: String(row.skill),
       skillVersion: Number(row.skill_version),
@@ -1212,6 +1101,8 @@ export class Storage {
       `);
     }
 
+    this.repairLegacySummaries();
+
     this.db.exec(`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_articles_url ON articles(url);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_articles_content_hash ON articles(content_hash);
@@ -1222,6 +1113,44 @@ export class Storage {
 
   private tableColumns(table: string): Array<{ name: string; pk: number }> {
     return this.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string; pk: number }>;
+  }
+
+  private repairLegacySummaries(): void {
+    const summaryColumns = this.tableColumns("article_summaries");
+    if (!summaryColumns.some((column) => column.name === "notion_blocks_json")) return;
+
+    this.db.exec(`
+      PRAGMA foreign_keys = OFF;
+      BEGIN;
+      CREATE TABLE article_summaries_repaired (
+        article_id INTEGER PRIMARY KEY,
+        markdown TEXT NOT NULL,
+        model TEXT NOT NULL,
+        skill TEXT NOT NULL,
+        skill_version INTEGER NOT NULL,
+        classification_reason TEXT,
+        summarized_at TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
+      );
+      INSERT OR REPLACE INTO article_summaries_repaired (
+        article_id, markdown, model, skill, skill_version,
+        classification_reason, summarized_at, created_at, updated_at
+      )
+      SELECT
+        article_id, markdown, model, skill, skill_version,
+        classification_reason, summarized_at,
+        COALESCE(created_at, CURRENT_TIMESTAMP),
+        COALESCE(updated_at, CURRENT_TIMESTAMP)
+      FROM article_summaries
+      WHERE article_id IS NOT NULL
+        AND markdown IS NOT NULL;
+      DROP TABLE article_summaries;
+      ALTER TABLE article_summaries_repaired RENAME TO article_summaries;
+      COMMIT;
+      PRAGMA foreign_keys = ON;
+    `);
   }
 
   private repairLegacySources(): void {
@@ -1463,7 +1392,6 @@ function readJobType(value: unknown): JobType {
   if (
     value === "summarize" ||
     value === "archive" ||
-    value === "format-summary-blocks" ||
     value === "sync-notion"
   ) {
     return value;

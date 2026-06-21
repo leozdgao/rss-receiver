@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 import { archiveArticles } from "../app/archive-runner.js";
-import { ensureArchivedArticlesDataSource } from "../app/notion-lifecycle.js";
-import { syncNotionOutbox } from "../app/notion-sync.js";
 import { runOnce } from "../app/receiver.js";
 import { startDaemon } from "../app/scheduler.js";
 import { syncSourcesFromYaml } from "../app/source-sync.js";
 import { summarizePending } from "../app/summary-runner.js";
-import { SummarySkillRegistry } from "../domain/summary/summary-skills.js";
-import { getConfigDiagnostics, loadConfig, requireNotionConfig, requireSetupConfig } from "../infra/env/config.js";
+import { getConfigDiagnostics, loadConfig, requireSetupConfig } from "../infra/env/config.js";
 import { ensureEnvFile, updateEnvFile } from "../infra/env/env-file.js";
+import { ensureArchivedArticlesDataSource } from "../infra/integrations/notion/lifecycle.js";
+import { syncNotionOutbox } from "../infra/integrations/notion/sync.js";
 import { NotionClient } from "../infra/notion/notion.js";
 import { Storage } from "../infra/sqlite/storage.js";
 import { getServiceProcessStatus, restartServiceProcess, startServiceInBackground, stopServiceProcess } from "../service/process.js";
@@ -114,17 +113,8 @@ async function main(): Promise<void> {
       return;
     }
 
-    if (command === "format-summary-blocks") {
-      requireNotionConfig(config);
-      const notion = new NotionClient(config);
-      const skillVersion = SummarySkillRegistry.load(config.summarySkillsDir).maxVersion();
-      const stats = await notion.reformatMarkdownSummaryPages(config.articlesDataSourceId, skillVersion);
-      console.log(JSON.stringify(stats, null, 2));
-      return;
-    }
-
     console.log(
-      "Usage: npm run setup | npm run sync-sources | npm run run-once | npm run daemon | npm run summarize | npm run archive | npm run sync-notion | npm run format-summary-blocks | npm run serve | npm run server:start | npm run server:status | npm run server:stop | npm run server:restart | npm run config"
+      "Usage: npm run setup | npm run sync-sources | npm run run-once | npm run daemon | npm run summarize | npm run archive | npm run sync-notion | npm run serve | npm run server:start | npm run server:status | npm run server:stop | npm run server:restart | npm run config"
     );
     process.exitCode = 1;
   } finally {

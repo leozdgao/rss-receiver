@@ -1,14 +1,13 @@
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import cron from "node-cron";
 import { archiveArticles } from "../app/archive-runner.js";
-import { ensureArchivedArticlesDataSource } from "../app/notion-lifecycle.js";
-import { syncArchiveProjection, syncArticleStatus, syncNotionOutbox } from "../app/notion-sync.js";
+import { createIntegrationDispatcher } from "../app/integrations.js";
 import { runOnce } from "../app/receiver.js";
 import { summarizePending } from "../app/summary-runner.js";
-import { SummarySkillRegistry } from "../domain/summary/summary-skills.js";
 import type { AppConfig } from "../infra/env/config.js";
-import { getConfigDiagnostics, requireNotionConfig } from "../infra/env/config.js";
-import { NotionClient } from "../infra/notion/notion.js";
+import { getConfigDiagnostics } from "../infra/env/config.js";
+import { ensureArchivedArticlesDataSource } from "../infra/integrations/notion/lifecycle.js";
+import { syncNotionOutbox } from "../infra/integrations/notion/sync.js";
 import { Storage, type JobType, type StoredJob } from "../infra/sqlite/storage.js";
 import { configureLogger, getLogger, logError, logInfo } from "../shared/logger.js";
 
@@ -112,9 +111,10 @@ export function createServiceApp(config: AppConfig, storage: Storage) {
     } : {});
     if (!article) return reply.code(404).send({ error: "Article not found" });
 
-    const statusIntegration = await syncArticleStatus(config, storage, articleId);
+    const integrations = createIntegrationDispatcher(config, storage);
+    const statusIntegration = await integrations.articleStatus(articleId);
     const archiveIntegration = status === "Archived"
-      ? await syncArchiveProjection(config, storage, articleId)
+      ? await integrations.archiveProjection(articleId)
       : { integrationErrors: [] };
     return {
       article: storage.getArticle(articleId),
@@ -133,12 +133,6 @@ async function runJob(type: JobType, config: AppConfig, storage: Storage): Promi
     return archiveArticles(config, storage);
   }
   if (type === "sync-notion") return syncNotionOutbox(config, storage);
-  if (type === "format-summary-blocks") {
-    requireNotionConfig(config);
-    const notion = new NotionClient(config);
-    const skillVersion = SummarySkillRegistry.load(config.summarySkillsDir).maxVersion();
-    return notion.reformatMarkdownSummaryPages(config.articlesDataSourceId, skillVersion);
-  }
   throw new Error(`Unsupported job type: ${type}`);
 }
 
@@ -290,7 +284,6 @@ function parseJobType(value: string): JobType | undefined {
     value === "run-once" ||
     value === "summarize" ||
     value === "archive" ||
-    value === "format-summary-blocks" ||
     value === "sync-notion"
   ) {
     return value;

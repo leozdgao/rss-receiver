@@ -1,6 +1,6 @@
-import { markdownToBlocks as martianMarkdownToBlocks } from "@tryfabric/martian";
 import type { FeedConfig } from "../../domain/rss/rss.js";
 import type { AppConfig } from "../env/config.js";
+import { markdownToNotionBlocks } from "./markdown.js";
 
 export type JsonObject = Record<string, unknown>;
 
@@ -11,22 +11,6 @@ export type ArticleIndexInput = {
   contentId: number;
   publishedAt?: string;
   extractionStatus: "Success" | "Failed";
-};
-
-export type SummarizableArticle = {
-  pageId: string;
-  contentId: number;
-  title: string;
-  url: string;
-  summaryStatus: "Pending" | "Failed" | "Done";
-  summarySkill?: string;
-  summarySkillVersion?: number;
-};
-
-export type ReformatSummaryStats = {
-  matched: number;
-  reformatted: number;
-  skipped: number;
 };
 
 export type ArchiveCandidate = {
@@ -169,12 +153,6 @@ export class NotionClient {
     });
   }
 
-  async getFeedSummarySkill(pageId: string): Promise<string | undefined> {
-    const page = await this.request("GET", `/v1/pages/${pageId}`);
-    const properties = (page.properties ?? {}) as JsonObject;
-    return readRichText(properties["Summary Skill"]);
-  }
-
   async createArticleIndex(dataSourceId: string, input: ArticleIndexInput): Promise<string> {
     const properties: JsonObject = {
       Title: title(input.title),
@@ -194,15 +172,6 @@ export class NotionClient {
 
     const page = await this.createPage(dataSourceId, properties);
     return String(page.id);
-  }
-
-  async updateArticleIndex(pageId: string, input: Pick<ArticleIndexInput, "extractionStatus">): Promise<void> {
-    await this.patchPage(pageId, {
-      "Extraction Status": { select: { name: input.extractionStatus } },
-      "Summary Status": {
-        select: { name: input.extractionStatus === "Success" ? "Pending" : "Failed" }
-      }
-    });
   }
 
   async updateArticleIndexMirror(
@@ -226,63 +195,12 @@ export class NotionClient {
     await this.patchPage(pageId, properties);
   }
 
-  async updateArticleTitle(pageId: string, articleTitle: string): Promise<void> {
-    await this.patchPage(pageId, {
-      Title: title(articleTitle)
-    });
-  }
-
   async updateArticleStatus(pageId: string, status: "Unread" | "Read" | "Archived", readAt?: string): Promise<void> {
     const properties: JsonObject = {
       Status: { select: { name: status } }
     };
     if (readAt) properties["Read At"] = { date: { start: readAt } };
     await this.patchPage(pageId, properties);
-  }
-
-  async ensureArticleLifecycleProperties(dataSourceId: string): Promise<void> {
-    await this.updateCollectionProperties(dataSourceId, {
-      "Read At": { date: {} },
-      "Remove From Notion At": { date: {} },
-      "Archived At": null,
-      "Archive Reason": null
-    });
-  }
-
-  async listArchiveCandidates(dataSourceId: string): Promise<ArchiveCandidate[]> {
-    const pages = await this.queryCollection(dataSourceId, {
-      filter: {
-        or: [
-          { property: "Status", select: { equals: "Unread" } },
-          { property: "Status", select: { equals: "Read" } },
-          { property: "Status", select: { equals: "Archived" } }
-        ]
-      }
-    });
-
-    return pages
-      .map((page): ArchiveCandidate | undefined => {
-        const properties = (page.properties ?? {}) as JsonObject;
-        const status = readSelect(properties.Status);
-        if (status !== "Unread" && status !== "Read" && status !== "Archived") return undefined;
-
-        return {
-          pageId: String(page.id),
-          contentId: readNumber(properties["Content ID"]),
-          title: readTitle(properties.Title) ?? readUrl(properties.URL) ?? String(page.id),
-          url: readUrl(properties.URL),
-          feedName: readRichText(properties.Feed),
-          status,
-          publishedAt: readDate(properties["Published At"]),
-          createdTime: typeof page.created_time === "string" ? page.created_time : undefined,
-          readAt: readDate(properties["Read At"]),
-          removeFromNotionAt: readDate(properties["Remove From Notion At"]),
-          summaryModel: readRichText(properties["Summary Model"]),
-          summarySkill: readRichText(properties["Summary Skill"]),
-          summarySkillVersion: readNumber(properties["Summary Skill Version"])
-        };
-      })
-      .filter((article): article is ArchiveCandidate => Boolean(article));
   }
 
   async listArticleIndexPages(dataSourceId: string): Promise<ArticleIndexPage[]> {
@@ -302,12 +220,6 @@ export class NotionClient {
 
   async ensureArchivedArticleProperties(dataSourceId: string): Promise<void> {
     await this.updateCollectionProperties(dataSourceId, archivedArticleProperties());
-  }
-
-  async setArticleReadAt(pageId: string, readAt: string): Promise<void> {
-    await this.patchPage(pageId, {
-      "Read At": { date: { start: readAt } }
-    });
   }
 
   async archiveArticleIndex(
@@ -355,49 +267,6 @@ export class NotionClient {
     return String(page.id);
   }
 
-  async listSummarizableArticles(dataSourceId: string, maxCurrentSkillVersion: number): Promise<SummarizableArticle[]> {
-    const pages = await this.queryCollection(dataSourceId, {
-      filter: {
-        and: [
-          {
-            or: [
-              { property: "Summary Status", select: { equals: "Pending" } },
-              { property: "Summary Status", select: { equals: "Failed" } },
-              { property: "Summary Skill Version", number: { less_than: maxCurrentSkillVersion } },
-              { property: "Summary Skill Version", number: { is_empty: true } }
-            ]
-          },
-          { property: "Extraction Status", select: { equals: "Success" } }
-        ]
-      }
-    });
-
-    return pages
-      .map((page): SummarizableArticle | undefined => {
-        const properties = (page.properties ?? {}) as JsonObject;
-        const contentId = readNumber(properties["Content ID"]);
-        const url = readUrl(properties.URL);
-        const titleValue = readTitle(properties.Title) ?? url;
-        const summaryStatus = readSelect(properties["Summary Status"]);
-        const summarySkill = readRichText(properties["Summary Skill"]);
-        const summarySkillVersion = readNumber(properties["Summary Skill Version"]);
-        if (!contentId || !url || !titleValue) return undefined;
-        const normalizedSummaryStatus: SummarizableArticle["summaryStatus"] =
-          summaryStatus === "Done" || summaryStatus === "Failed" ? summaryStatus : "Pending";
-
-        return {
-          pageId: String(page.id),
-          contentId,
-          title: titleValue,
-          url,
-          summaryStatus: normalizedSummaryStatus,
-          summarySkill,
-          summarySkillVersion
-        };
-      })
-      .filter((article): article is SummarizableArticle => Boolean(article));
-  }
-
   async saveSummary(
     pageId: string,
     summary: string,
@@ -406,10 +275,9 @@ export class NotionClient {
       skillId?: string;
       skillVersion?: number;
       classificationReason?: string;
-    },
-    blocks?: JsonObject[]
+    }
   ): Promise<void> {
-    await this.replacePageContent(pageId, blocks?.length ? blocks : markdownToNotionBlocks(summary));
+    await this.replacePageContent(pageId, markdownToNotionBlocks(summary));
     const properties: JsonObject = {
       "Summary Status": { select: { name: "Done" } },
       "Summary Model": { rich_text: richText(model) },
@@ -431,68 +299,6 @@ export class NotionClient {
     await this.patchPage(pageId, {
       "Summary Status": { select: { name: "Failed" } }
     });
-  }
-
-  async updateSummaryStatus(
-    pageId: string,
-    status: "Pending" | "Failed" | "Done",
-    metadata?: {
-      model?: string;
-      skillId?: string;
-      skillVersion?: number;
-      classificationReason?: string;
-      summarizedAt?: string;
-    }
-  ): Promise<void> {
-    const properties: JsonObject = {
-      "Summary Status": { select: { name: status } }
-    };
-    if (metadata?.model) properties["Summary Model"] = { rich_text: richText(metadata.model) };
-    if (metadata?.skillId) properties["Summary Skill"] = { rich_text: richText(metadata.skillId) };
-    if (metadata?.skillVersion) properties["Summary Skill Version"] = { number: metadata.skillVersion };
-    if (metadata?.classificationReason) {
-      properties["Summary Classification Reason"] = { rich_text: richText(metadata.classificationReason) };
-    }
-    if (metadata?.summarizedAt) properties["Summarized At"] = { date: { start: metadata.summarizedAt } };
-    await this.patchPage(pageId, properties);
-  }
-
-  async reformatMarkdownSummaryPages(dataSourceId: string, skillVersion: number): Promise<ReformatSummaryStats> {
-    const pages = await this.queryCollection(dataSourceId, {
-      filter: {
-        and: [
-          { property: "Summary Status", select: { equals: "Done" } },
-          { property: "Extraction Status", select: { equals: "Success" } }
-        ]
-      }
-    });
-
-    let reformatted = 0;
-    let skipped = 0;
-    for (const page of pages) {
-      const properties = (page.properties ?? {}) as JsonObject;
-      if (readNumber(properties["Summary Skill Version"]) !== skillVersion) {
-        skipped += 1;
-        continue;
-      }
-
-      const pageId = String(page.id);
-      const blocks = await this.listBlockChildren(pageId);
-      const markdown = extractMarkdownSummaryText(blocks);
-      if (!markdown || !looksLikeMarkdown(markdown)) {
-        skipped += 1;
-        continue;
-      }
-
-      await this.replacePageContent(pageId, markdownToNotionBlocks(markdown));
-      reformatted += 1;
-    }
-
-    return {
-      matched: pages.length,
-      reformatted,
-      skipped
-    };
   }
 
   private async createCollection(
@@ -747,18 +553,6 @@ function paragraphBlock(value: string): JsonObject {
   };
 }
 
-export function markdownToNotionBlocks(markdown: string): JsonObject[] {
-  try {
-    const blocks = martianMarkdownToBlocks(markdown, {
-      strictImageUrls: false,
-      notionLimits: { truncate: true }
-    }) as JsonObject[];
-    return blocks.length > 0 ? blocks : [paragraphBlock("No summary content.")];
-  } catch {
-    return [paragraphBlock(markdown.trim() || "No summary content.")];
-  }
-}
-
 function truncate(value: string, length: number): string {
   return value.length > length ? value.slice(0, length - 1) : value;
 }
@@ -785,34 +579,6 @@ function readNumber(property: unknown): number | undefined {
 
 function readSelect(property: unknown): string | undefined {
   return (property as { select?: { name?: string } | null })?.select?.name;
-}
-
-function readDate(property: unknown): string | undefined {
-  return (property as { date?: { start?: string } | null })?.date?.start;
-}
-
-function extractMarkdownSummaryText(blocks: JsonObject[]): string | undefined {
-  const text = blocks
-    .map((block) => blockPlainText(block))
-    .filter(Boolean)
-    .join("\n\n")
-    .trim();
-  return text || undefined;
-}
-
-function blockPlainText(block: JsonObject): string {
-  const type = block.type;
-  if (typeof type !== "string") return "";
-  const value = block[type] as { rich_text?: Array<{ plain_text?: string }> } | undefined;
-  return value?.rich_text?.map((item) => item.plain_text ?? "").join("").trim() ?? "";
-}
-
-function looksLikeMarkdown(value: string): boolean {
-  return /(^|\n)\s{0,3}#{1,6}\s+\S/.test(value) ||
-    /(^|\n)\s{0,3}[-*+]\s+\S/.test(value) ||
-    /(^|\n)\s{0,3}\d+[.)]\s+\S/.test(value) ||
-    /\*\*[^*]+\*\*/.test(value) ||
-    /\[[^\]]+\]\([^)]+\)/.test(value);
 }
 
 function toAppendableBlock(block: JsonObject): JsonObject | undefined {

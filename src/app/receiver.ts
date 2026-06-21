@@ -4,12 +4,7 @@ import { Storage } from "../infra/sqlite/storage.js";
 import { extractArticle } from "../infra/web/extractor.js";
 import { stableContentHash } from "../shared/hash.js";
 import { logError, logInfo } from "../shared/logger.js";
-import {
-  importNotionSourcesIfNeeded,
-  syncArticleIndex,
-  syncSourceError,
-  syncSourceSuccess
-} from "./notion-sync.js";
+import { createIntegrationDispatcher } from "./integrations.js";
 
 export type RunStats = {
   feeds: number;
@@ -22,7 +17,8 @@ export type RunStats = {
 
 export async function runOnce(config: AppConfig, storage: Storage): Promise<RunStats> {
   logInfo("Fetch run started.");
-  const feeds = await importNotionSourcesIfNeeded(config, storage);
+  const integrations = createIntegrationDispatcher(config, storage);
+  const feeds = await integrations.loadSources();
   const stats: RunStats = {
     feeds: feeds.length,
     items: 0,
@@ -77,7 +73,7 @@ export async function runOnce(config: AppConfig, storage: Storage): Promise<RunS
             total: items.length
           });
           if (!existing.notionPageId) {
-            await syncArticleIndex(config, storage, existing.id);
+            await integrations.articleIndex(existing.id);
           }
           continue;
         }
@@ -168,7 +164,7 @@ export async function runOnce(config: AppConfig, storage: Storage): Promise<RunS
           });
         }
 
-        const integration = await syncArticleIndex(config, storage, article.id);
+        const integration = await integrations.articleIndex(article.id);
         if (!wasExisting) stats.inserted += 1;
         logInfo("Article index projection handled.", {
           contentId: article.id,
@@ -178,12 +174,12 @@ export async function runOnce(config: AppConfig, storage: Storage): Promise<RunS
       }
 
       storage.markSourceSuccess(feed.id);
-      await syncSourceSuccess(config, storage, feed);
+      await integrations.sourceSuccess(feed);
       logInfo("Feed fetch finished.", { feed: feed.name, selected: items.length });
     } catch (error) {
       logError("Feed fetch failed.", error, { feed: feed.name, url: feed.url });
       storage.markSourceError(feed.id, error);
-      await syncSourceError(config, storage, feed, error);
+      await integrations.sourceError(feed, error);
     }
   }
 

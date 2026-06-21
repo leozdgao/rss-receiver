@@ -1,7 +1,7 @@
 import type { AppConfig } from "../infra/env/config.js";
 import type { ArchiveCandidate, Storage } from "../infra/sqlite/storage.js";
 import { logInfo } from "../shared/logger.js";
-import { syncArchiveProjection, syncArticleStatus, syncRemoveArticleIndex } from "./notion-sync.js";
+import { createIntegrationDispatcher, type IntegrationDispatcher } from "./integrations.js";
 
 export type ArchiveStats = {
   candidates: number;
@@ -15,6 +15,7 @@ export type ArchiveStats = {
 export async function archiveArticles(config: AppConfig, storage: Storage): Promise<ArchiveStats> {
   const now = new Date();
   const candidates = storage.listArchiveCandidates();
+  const integrations = createIntegrationDispatcher(config, storage);
   const stats: ArchiveStats = {
     candidates: candidates.length,
     readStamped: 0,
@@ -34,14 +35,14 @@ export async function archiveArticles(config: AppConfig, storage: Storage): Prom
     if (article.status === "Read") {
       if (!article.readAt) {
         storage.setArticleStatus(article.id, "Read", { readAt: now.toISOString() });
-        await syncArticleStatus(config, storage, article.id);
+        await integrations.articleStatus(article.id);
         stats.readStamped += 1;
         logInfo("Read article stamped in SQLite.", { contentId: article.id, title: article.title });
         continue;
       }
 
       if (isOlderThan(article.readAt, now, config.readArchiveAfterDays)) {
-        await archiveArticle(config, storage, article, now, "Read expired");
+        await archiveArticle(config, storage, integrations, article, now, "Read expired");
         stats.archivedRead += 1;
         continue;
       }
@@ -50,14 +51,14 @@ export async function archiveArticles(config: AppConfig, storage: Storage): Prom
     if (article.status === "Unread") {
       const referenceDate = article.publishedAt ?? article.createdAt;
       if (referenceDate && isOlderThan(referenceDate, now, config.unreadArchiveAfterDays)) {
-        await archiveArticle(config, storage, article, now, "Unread expired");
+        await archiveArticle(config, storage, integrations, article, now, "Unread expired");
         stats.archivedUnread += 1;
         continue;
       }
     }
 
     if (article.status === "Archived" && article.removeFromProjectionAt && new Date(article.removeFromProjectionAt) <= now) {
-      const integration = await syncRemoveArticleIndex(config, storage, article.id);
+      const integration = await integrations.removeArticleIndex(article.id);
       stats.removedFromNotion += integration.ok ? 1 : 0;
       logInfo("Archived article Notion removal handled.", {
         contentId: article.id,
@@ -78,6 +79,7 @@ export async function archiveArticles(config: AppConfig, storage: Storage): Prom
 async function archiveArticle(
   config: AppConfig,
   storage: Storage,
+  integrations: IntegrationDispatcher,
   article: ArchiveCandidate,
   now: Date,
   reason: "Read expired" | "Unread expired"
@@ -88,7 +90,7 @@ async function archiveArticle(
     archiveReason: reason,
     removeFromProjectionAt
   });
-  const integration = await syncArchiveProjection(config, storage, article.id);
+  const integration = await integrations.archiveProjection(article.id);
   logInfo("Article archived in SQLite.", {
     contentId: article.id,
     title: article.title,

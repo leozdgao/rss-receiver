@@ -1,12 +1,11 @@
-import type { AppConfig } from "../infra/env/config.js";
+import type { AppConfig } from "../../env/config.js";
 import {
   NotionClient,
   type ArticleIndexPage,
-  type ArchiveCandidate as NotionArchiveCandidate,
-  type JsonObject
-} from "../infra/notion/notion.js";
-import type { OutboxItem, Source, Storage, StoredArticle, StoredSummary } from "../infra/sqlite/storage.js";
-import { logError, logInfo } from "../shared/logger.js";
+  type ArchiveCandidate as NotionArchiveCandidate
+} from "../../notion/notion.js";
+import type { OutboxItem, Source, Storage, StoredArticle } from "../../sqlite/storage.js";
+import { logError, logInfo } from "../../../shared/logger.js";
 
 export type IntegrationResult = {
   ok: boolean;
@@ -121,7 +120,7 @@ export async function syncSummary(config: AppConfig, storage: Storage, articleId
       skillId: summary.skill,
       skillVersion: summary.skillVersion,
       classificationReason: summary.classificationReason
-    }, storedNotionBlocksFromSummary(summary));
+    });
   });
 }
 
@@ -310,7 +309,7 @@ async function replayOutboxItem(config: AppConfig, storage: Storage, item: Outbo
       skillId: summary.skill,
       skillVersion: summary.skillVersion,
       classificationReason: summary.classificationReason
-    }, storedNotionBlocksFromSummary(summary));
+    });
     return;
   }
   if (item.operation === "summary_failed") {
@@ -545,23 +544,6 @@ function toArticleIndexInput(article: StoredArticle, extractionStatus: "Success"
     publishedAt: article.publishedAt,
     extractionStatus
   };
-}
-
-export function storedNotionBlocksFromSummary(summary: StoredSummary): JsonObject[] | undefined {
-  try {
-    const parsed = JSON.parse(summary.notionBlocksJson);
-    if (!Array.isArray(parsed)) return undefined;
-    const blocks = parsed.filter(isAppendableNotionBlock);
-    return blocks.length > 0 ? blocks : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function isAppendableNotionBlock(value: unknown): value is JsonObject {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
-  const block = value as JsonObject;
-  return block.object === "block" && typeof block.type === "string" && Boolean(block[block.type]);
 }
 
 async function projectArchivedArticle(config: AppConfig, storage: Storage, articleId: number): Promise<void> {

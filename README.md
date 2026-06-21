@@ -118,7 +118,6 @@ npm run daemon
 npm run summarize
 npm run archive
 npm run sync-notion
-npm run format-summary-blocks
 npm run serve
 npm run server:start
 npm run server:status
@@ -166,11 +165,11 @@ The summary flow:
 1. Selects articles from SQLite with successful extraction and non-empty text.
 2. Includes `Pending`, `Failed`, missing-summary, and outdated-skill-version candidates.
 3. Generates markdown through the Summary Agent.
-4. Stores markdown and Notion block JSON in SQLite `article_summaries`.
+4. Stores markdown and summary metadata in SQLite `article_summaries`.
 5. Marks SQLite `articles.summary_status = Done`.
 6. Projects the summary to Notion with `syncSummary` when Notion sync is enabled.
 
-`syncSummary` prefers stored `notion_blocks_json` when writing Notion page body, preserving heading/list formatting.
+Notion summary sync formats SQLite markdown into Notion blocks during projection.
 
 ## Notion Sync
 
@@ -231,7 +230,6 @@ Endpoints:
 - `POST /jobs/run-once`
 - `POST /jobs/summarize`
 - `POST /jobs/archive`
-- `POST /jobs/format-summary-blocks`
 - `POST /jobs/sync-notion`
 - `POST /integrations/notion/sync`
 - `GET /articles`

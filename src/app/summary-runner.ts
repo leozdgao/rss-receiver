@@ -2,10 +2,9 @@ import { SummaryAgent } from "../domain/summary/summary-agent.js";
 import { SummarySkillRegistry } from "../domain/summary/summary-skills.js";
 import type { AppConfig } from "../infra/env/config.js";
 import { requireSummaryLlmConfig } from "../infra/env/config.js";
-import { markdownToNotionBlocks } from "../infra/notion/notion.js";
 import { Storage } from "../infra/sqlite/storage.js";
 import { logError, logInfo } from "../shared/logger.js";
-import { syncSummary, syncSummaryFailed } from "./notion-sync.js";
+import { createIntegrationDispatcher } from "./integrations.js";
 
 export type SummaryStats = {
   candidates: number;
@@ -24,6 +23,7 @@ export async function summarizePending(config: AppConfig, storage: Storage): Pro
   const registry = SummarySkillRegistry.load(config.summarySkillsDir);
   const articles = storage.listSummarizableArticles(registry.maxVersion());
   const agent = new SummaryAgent(config, registry);
+  const integrations = createIntegrationDispatcher(config, storage);
   const stats: SummaryStats = {
     candidates: articles.length,
     summarized: 0,
@@ -57,7 +57,7 @@ export async function summarizePending(config: AppConfig, storage: Storage): Pro
           notionPageId: article.notionPageId
         });
         storage.markSummaryFailed(article.articleId, "No successful SQLite content found.");
-        await syncSummaryFailed(config, storage, article.articleId, "No successful SQLite content found.");
+        await integrations.summaryFailed(article.articleId, "No successful SQLite content found.");
         continue;
       }
       logInfo("Summary content loaded from SQLite.", {
@@ -84,14 +84,13 @@ export async function summarizePending(config: AppConfig, storage: Storage): Pro
       storage.saveSummary({
         articleId: article.articleId,
         markdown: result.summary,
-        notionBlocksJson: JSON.stringify(markdownToNotionBlocks(result.summary)),
         model: result.model,
         skill: result.skill.id,
         skillVersion: result.skill.version,
         classificationReason: result.classification.reason,
         summarizedAt
       });
-      const integration = await syncSummary(config, storage, article.articleId);
+      const integration = await integrations.summary(article.articleId);
       stats.summarized += 1;
       logInfo("Summary saved to SQLite.", {
         contentId: article.articleId,
@@ -105,7 +104,7 @@ export async function summarizePending(config: AppConfig, storage: Storage): Pro
         notionPageId: article.notionPageId
       });
       storage.markSummaryFailed(article.articleId, error);
-      await syncSummaryFailed(config, storage, article.articleId, error);
+      await integrations.summaryFailed(article.articleId, error);
     }
   }
 

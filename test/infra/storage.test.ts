@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 import { Storage } from "../../src/infra/sqlite/storage.js";
 
@@ -58,7 +59,6 @@ describe("Storage", () => {
     storage.saveSummary({
       articleId: article.id,
       markdown: "## Summary",
-      notionBlocksJson: "[]",
       model: "test-model",
       skill: "default",
       skillVersion: 2,
@@ -112,6 +112,50 @@ describe("Storage", () => {
       payload: { articleId: article.id, retry: true }
     });
 
+    storage.close();
+  });
+
+  it("migrates legacy summary rows away from Notion block JSON", () => {
+    const dbPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "rss-receiver-")), "legacy.sqlite");
+    const db = new Database(dbPath);
+    db.exec(`
+      CREATE TABLE article_summaries (
+        article_id INTEGER PRIMARY KEY,
+        markdown TEXT NOT NULL,
+        notion_blocks_json TEXT NOT NULL,
+        model TEXT NOT NULL,
+        skill TEXT NOT NULL,
+        skill_version INTEGER NOT NULL,
+        classification_reason TEXT,
+        summarized_at TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      );
+      INSERT INTO article_summaries (
+        article_id, markdown, notion_blocks_json, model, skill, skill_version, classification_reason, summarized_at
+      ) VALUES (
+        42, '## Summary', '[]', 'test-model', 'default', 2, 'reason', '2026-06-15T00:00:00.000Z'
+      );
+    `);
+    db.close();
+
+    const storage = new Storage(dbPath);
+    storage.migrate();
+
+    expect(storage.getSummary(42)).toMatchObject({
+      articleId: 42,
+      markdown: "## Summary",
+      model: "test-model",
+      skill: "default",
+      skillVersion: 2,
+      classificationReason: "reason"
+    });
+    const inspectDb = new Database(dbPath);
+    const columns = inspectDb
+      .prepare("PRAGMA table_info(article_summaries)")
+      .all() as Array<{ name: string }>;
+    inspectDb.close();
+    expect(columns.map((column) => column.name)).not.toContain("notion_blocks_json");
     storage.close();
   });
 });

@@ -21,7 +21,6 @@
     "summarize": "tsx src/cli/index.ts summarize",
     "archive": "tsx src/cli/index.ts archive",
     "sync-notion": "tsx src/cli/index.ts sync-notion",
-    "format-summary-blocks": "tsx src/cli/index.ts format-summary-blocks",
     "serve": "tsx src/cli/index.ts serve",
     "server:start": "tsx src/cli/index.ts server:start",
     "server:status": "tsx src/cli/index.ts server:status",
