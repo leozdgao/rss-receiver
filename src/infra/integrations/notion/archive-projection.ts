@@ -1,5 +1,5 @@
 import type { AppConfig } from "../../env/config.js";
-import { NotionClient, type ArchiveCandidate as NotionArchiveCandidate } from "../../notion/notion.js";
+import { NotionClient, type ArchiveCandidate as NotionArchiveCandidate } from "./client.js";
 import type { Storage, StoredArticle } from "../../sqlite/storage.js";
 import { requireArticle, upsertArticleIndex } from "./article-mirror.js";
 

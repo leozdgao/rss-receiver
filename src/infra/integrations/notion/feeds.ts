@@ -1,5 +1,5 @@
 import type { FeedConfig } from "../../../domain/rss/rss.js";
-import type { JsonObject } from "../../notion/notion.js";
+import type { JsonObject } from "./client.js";
 
 export type NotionFeedApi = {
   queryCollection(dataSourceId: string, body: JsonObject): Promise<JsonObject[]>;

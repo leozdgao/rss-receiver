@@ -1,7 +1,7 @@
 import type { AppConfig } from "../../env/config.js";
 import { requireNotionConfig } from "../../env/config.js";
 import { updateEnvFile } from "../../env/env-file.js";
-import { NotionClient } from "../../notion/notion.js";
+import { NotionClient } from "./client.js";
 
 export async function ensureArchivedArticlesDataSource(config: AppConfig): Promise<void> {
   if (config.archivedArticlesDataSourceId) return;

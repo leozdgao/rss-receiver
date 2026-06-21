@@ -1,5 +1,5 @@
 import type { AppConfig } from "../../env/config.js";
-import { NotionClient } from "../../notion/notion.js";
+import { NotionClient } from "./client.js";
 import type { Storage } from "../../sqlite/storage.js";
 import { requireArticle, upsertArticleIndex } from "./article-mirror.js";
 import { markdownToNotionBlocks } from "./formatting.js";

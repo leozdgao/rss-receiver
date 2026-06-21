@@ -9,7 +9,7 @@ import { ensureEnvFile, updateEnvFile } from "../infra/env/env-file.js";
 import { createIntegrationDispatcher } from "../infra/integrations/dispatcher.js";
 import { ensureArchivedArticlesDataSource } from "../infra/integrations/notion/lifecycle.js";
 import { syncNotionOutbox } from "../infra/integrations/notion/sync.js";
-import { NotionClient } from "../infra/notion/notion.js";
+import { setupIntegrations } from "../infra/integrations/setup.js";
 import { Storage } from "../infra/sqlite/storage.js";
 import { getServiceProcessStatus, restartServiceProcess, startServiceInBackground, stopServiceProcess } from "../service/process.js";
 import { startService } from "../service/server.js";
@@ -61,20 +61,10 @@ async function main(): Promise<void> {
   try {
     if (command === "setup") {
       requireSetupConfig(config);
-      const notion = new NotionClient(config);
-      const result = await notion.setup(config.notionParentPageId);
-      updateEnvFile({
-        NOTION_PARENT_PAGE_ID: result.parentPageId,
-        NOTION_FEEDS_DATA_SOURCE_ID: result.feedsDataSourceId,
-        NOTION_ARTICLES_DATA_SOURCE_ID: result.articlesDataSourceId,
-        NOTION_ARCHIVED_ARTICLES_DATA_SOURCE_ID: result.archivedArticlesDataSourceId
-      });
+      const setup = await setupIntegrations(config, { integrations: ["notion"] });
+      updateEnvFile(setup.envUpdates);
       console.log(createdEnv ? "Created .env from .env.example." : "Updated existing .env.");
-      console.log("Setup complete:");
-      console.log(`NOTION_PARENT_PAGE_ID=${result.parentPageId}`);
-      console.log(`NOTION_FEEDS_DATA_SOURCE_ID=${result.feedsDataSourceId}`);
-      console.log(`NOTION_ARTICLES_DATA_SOURCE_ID=${result.articlesDataSourceId}`);
-      console.log(`NOTION_ARCHIVED_ARTICLES_DATA_SOURCE_ID=${result.archivedArticlesDataSourceId}`);
+      for (const message of setup.messages) console.log(message);
       return;
     }
 

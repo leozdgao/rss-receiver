@@ -1,4 +1,4 @@
-import type { JsonObject } from "../../notion/notion.js";
+import type { JsonObject } from "./client.js";
 
 export type ArticleIndexInput = {
   title: string;

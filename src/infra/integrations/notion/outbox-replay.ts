@@ -1,5 +1,5 @@
 import type { AppConfig } from "../../env/config.js";
-import { NotionClient } from "../../notion/notion.js";
+import { NotionClient } from "./client.js";
 import type { OutboxItem, Storage } from "../../sqlite/storage.js";
 import { logError, logInfo } from "../../../shared/logger.js";
 import { projectArchivedArticle, removeArticleIndexProjection } from "./archive-projection.js";

@@ -146,7 +146,7 @@ If Notion sync fails:
 
 Outbox items are not business truth. Replayed operations should use current SQLite state and skip stale items when the target SQLite entity no longer exists.
 
-Notion request timeout is implemented in `NotionClient.request`.
+Notion request timeout is implemented in `src/infra/integrations/notion/client.ts`.
 
 ## Server Behavior
 
@@ -197,7 +197,7 @@ sqlite3 data/rss-receiver.sqlite "SELECT id,type,status,trigger,parent_job_id,er
   - infrastructure: `src/infra`
   - HTTP/service/process: `src/service`
   - shared helpers: `src/shared`
-- Keep Notion-specific behavior in `src/infra/notion` or `src/infra/integrations/notion`.
+- Keep Notion-specific behavior in `src/infra/integrations/notion`.
 - Keep SQLite schema and query behavior in `src/infra/sqlite/storage.ts`.
 - Add tests for behavior changes, especially storage selection logic and sync edge cases.
 

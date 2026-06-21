@@ -1,22 +1,20 @@
-import type { FeedConfig } from "../../domain/rss/rss.js";
+import type { FeedConfig } from "../../../domain/rss/rss.js";
 import {
   applyNotionArticleOperations,
   type ArticleIndexInput,
   type ArticleIndexPage
-} from "../integrations/notion/articles.js";
+} from "./articles.js";
 import {
   applyNotionArchiveOperations,
   type ArchiveCandidate
-} from "../integrations/notion/archives.js";
-import { applyNotionFeedOperations } from "../integrations/notion/feeds.js";
-import { applyNotionSetupOperations, type NotionSetupResult } from "../integrations/notion/setup.js";
-import type { AppConfig } from "../env/config.js";
+} from "./archives.js";
+import { applyNotionFeedOperations } from "./feeds.js";
+import type { AppConfig } from "../../env/config.js";
 
 export type JsonObject = Record<string, unknown>;
 export type { ArticleIndexInput, ArticleIndexPage, ArchiveCandidate };
 
 export interface NotionClient {
-  setup(parentPageId?: string): Promise<NotionSetupResult>;
   createArchivedArticlesDataSource(parentPageId: string): Promise<string>;
   listEnabledFeeds(dataSourceId: string): Promise<FeedConfig[]>;
   updateFeedSuccess(pageId: string): Promise<void>;
@@ -223,7 +221,6 @@ export class NotionClient {
   }
 }
 
-applyNotionSetupOperations(NotionClient);
 applyNotionFeedOperations(NotionClient);
 applyNotionArticleOperations(NotionClient);
 applyNotionArchiveOperations(NotionClient);

@@ -1,4 +1,6 @@
-import type { JsonObject } from "../../notion/notion.js";
+import type { IntegrationSetupProvider } from "../setup.js";
+import { NotionClient } from "./client.js";
+import type { JsonObject } from "./client.js";
 import { createArchivedArticlesDataSource } from "./archives.js";
 
 export type NotionSetupResult = {
@@ -13,15 +15,24 @@ export type NotionSetupApi = {
   createCollection(titleValue: string, properties: JsonObject, parentPageId: string): Promise<string>;
 };
 
-export type NotionSetupClient = NotionSetupApi & {
-  setup(parentPageId?: string): Promise<NotionSetupResult>;
+export const notionSetupProvider: IntegrationSetupProvider<NotionSetupResult> = {
+  integration: "notion",
+  enabled: (config) => config.notionSyncEnabled,
+  setup: async (config) => setupNotionWorkspace(new NotionClient(config), config.notionParentPageId),
+  envUpdates: (result) => ({
+    NOTION_PARENT_PAGE_ID: result.parentPageId,
+    NOTION_FEEDS_DATA_SOURCE_ID: result.feedsDataSourceId,
+    NOTION_ARTICLES_DATA_SOURCE_ID: result.articlesDataSourceId,
+    NOTION_ARCHIVED_ARTICLES_DATA_SOURCE_ID: result.archivedArticlesDataSourceId
+  }),
+  messages: (result) => [
+    "Setup complete:",
+    `NOTION_PARENT_PAGE_ID=${result.parentPageId}`,
+    `NOTION_FEEDS_DATA_SOURCE_ID=${result.feedsDataSourceId}`,
+    `NOTION_ARTICLES_DATA_SOURCE_ID=${result.articlesDataSourceId}`,
+    `NOTION_ARCHIVED_ARTICLES_DATA_SOURCE_ID=${result.archivedArticlesDataSourceId}`
+  ]
 };
-
-export function applyNotionSetupOperations(Client: { prototype: NotionSetupClient }): void {
-  Client.prototype.setup = function (parentPageId?: string): Promise<NotionSetupResult> {
-    return setupNotionWorkspace(this, parentPageId);
-  };
-}
 
 export async function setupNotionWorkspace(
   notion: NotionSetupApi,
