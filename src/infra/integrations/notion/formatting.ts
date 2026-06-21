@@ -1,5 +1,5 @@
 import { markdownToBlocks as martianMarkdownToBlocks } from "@tryfabric/martian";
-import type { JsonObject } from "./notion.js";
+import type { JsonObject } from "../../notion/notion.js";
 
 export function markdownToNotionBlocks(markdown: string): JsonObject[] {
   try {

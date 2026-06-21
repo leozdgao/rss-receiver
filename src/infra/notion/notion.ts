@@ -1,6 +1,5 @@
 import type { FeedConfig } from "../../domain/rss/rss.js";
 import type { AppConfig } from "../env/config.js";
-import { markdownToNotionBlocks } from "./markdown.js";
 
 export type JsonObject = Record<string, unknown>;
 
@@ -269,7 +268,7 @@ export class NotionClient {
 
   async saveSummary(
     pageId: string,
-    summary: string,
+    blocks: JsonObject[],
     model: string,
     metadata?: {
       skillId?: string;
@@ -277,7 +276,7 @@ export class NotionClient {
       classificationReason?: string;
     }
   ): Promise<void> {
-    await this.replacePageContent(pageId, markdownToNotionBlocks(summary));
+    await this.replacePageContent(pageId, blocks);
     const properties: JsonObject = {
       "Summary Status": { select: { name: "Done" } },
       "Summary Model": { rich_text: richText(model) },
