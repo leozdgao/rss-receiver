@@ -1,0 +1,33 @@
+src/app/archive-runner.ts
+  s_93b16046a86b48::t_2324e015aaeb00 4,11,15-19,27,65-66,69,102
+src/infra/integrations/dispatcher.ts
+  s_93b16046a86b48::t_f863e41a82d8ce 1-28
+src/service/server.ts
+  s_93b16046a86b48::t_68dc9c1c8e3502 8,129-131,134
+src/app/integrations.ts
+  s_93b16046a86b48::t_f863e41a82d8ce 3-6,20-22,24-32
+src/app/summary-runner.ts
+  s_93b16046a86b48::t_2324e015aaeb00 7,16-20,59,99,105
+src/app/scheduler.ts
+  s_93b16046a86b48::t_2324e015aaeb00 5,8-12,23
+src/app/receiver.ts
+  s_93b16046a86b48::t_2324e015aaeb00 7,18-22,78,172
+src/cli/index.ts
+  s_93b16046a86b48::t_68dc9c1c8e3502 9,59,82,95,100,107
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.9",
+  "base_commit_sha": "299c09726a65965fc641baba18de1b50189c28f4",
+  "prompts": {},
+  "sessions": {
+    "s_93b16046a86b48": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ee9a3-4e21-77e2-b11a-6b30eb39528d",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
