@@ -4,7 +4,7 @@ import type { AppConfig } from "../infra/env/config.js";
 import { requireSummaryLlmConfig } from "../infra/env/config.js";
 import { Storage } from "../infra/sqlite/storage.js";
 import { logError, logInfo } from "../shared/logger.js";
-import { createIntegrationDispatcher } from "./integrations.js";
+import { createNoopIntegrationDispatcher, type IntegrationDispatcher } from "./integrations.js";
 
 export type SummaryStats = {
   candidates: number;
@@ -13,7 +13,11 @@ export type SummaryStats = {
   missingContent: number;
 };
 
-export async function summarizePending(config: AppConfig, storage: Storage): Promise<SummaryStats> {
+export async function summarizePending(
+  config: AppConfig,
+  storage: Storage,
+  integrations: IntegrationDispatcher = createNoopIntegrationDispatcher(storage)
+): Promise<SummaryStats> {
   requireSummaryLlmConfig(config);
   logInfo("Summary run started.", {
     provider: "openai-compatible",
@@ -23,7 +27,6 @@ export async function summarizePending(config: AppConfig, storage: Storage): Pro
   const registry = SummarySkillRegistry.load(config.summarySkillsDir);
   const articles = storage.listSummarizableArticles(registry.maxVersion());
   const agent = new SummaryAgent(config, registry);
-  const integrations = createIntegrationDispatcher(config, storage);
   const stats: SummaryStats = {
     candidates: articles.length,
     summarized: 0,
@@ -53,8 +56,7 @@ export async function summarizePending(config: AppConfig, storage: Storage): Pro
       if (!content) {
         stats.missingContent += 1;
         logInfo("Summary content missing in SQLite.", {
-          contentId: article.articleId,
-          notionPageId: article.notionPageId
+          contentId: article.articleId
         });
         storage.markSummaryFailed(article.articleId, "No successful SQLite content found.");
         await integrations.summaryFailed(article.articleId, "No successful SQLite content found.");
@@ -94,14 +96,13 @@ export async function summarizePending(config: AppConfig, storage: Storage): Pro
       stats.summarized += 1;
       logInfo("Summary saved to SQLite.", {
         contentId: article.articleId,
-        notionSync: integration.ok ? "ok" : "queued",
+        integrationSync: integration.ok ? "ok" : "queued",
         integrationErrors: integration.integrationErrors
       });
     } catch (error) {
       stats.failed += 1;
       logError("Summary article failed.", error, {
-        contentId: article.articleId,
-        notionPageId: article.notionPageId
+        contentId: article.articleId
       });
       storage.markSummaryFailed(article.articleId, error);
       await integrations.summaryFailed(article.articleId, error);

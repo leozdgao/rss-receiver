@@ -4,7 +4,7 @@ import { Storage } from "../infra/sqlite/storage.js";
 import { extractArticle } from "../infra/web/extractor.js";
 import { stableContentHash } from "../shared/hash.js";
 import { logError, logInfo } from "../shared/logger.js";
-import { createIntegrationDispatcher } from "./integrations.js";
+import { createNoopIntegrationDispatcher, type IntegrationDispatcher } from "./integrations.js";
 
 export type RunStats = {
   feeds: number;
@@ -15,9 +15,12 @@ export type RunStats = {
   titlesUpdated: number;
 };
 
-export async function runOnce(config: AppConfig, storage: Storage): Promise<RunStats> {
+export async function runOnce(
+  config: AppConfig,
+  storage: Storage,
+  integrations: IntegrationDispatcher = createNoopIntegrationDispatcher(storage)
+): Promise<RunStats> {
   logInfo("Fetch run started.");
-  const integrations = createIntegrationDispatcher(config, storage);
   const feeds = await integrations.loadSources();
   const stats: RunStats = {
     feeds: feeds.length,
@@ -72,9 +75,7 @@ export async function runOnce(config: AppConfig, storage: Storage): Promise<RunS
             index: itemIndex + 1,
             total: items.length
           });
-          if (!existing.notionPageId) {
-            await integrations.articleIndex(existing.id);
-          }
+          await integrations.articleIndex(existing.id);
           continue;
         }
         if (existing) {
@@ -168,7 +169,7 @@ export async function runOnce(config: AppConfig, storage: Storage): Promise<RunS
         if (!wasExisting) stats.inserted += 1;
         logInfo("Article index projection handled.", {
           contentId: article.id,
-          notionSync: integration.ok ? "ok" : "queued",
+          integrationSync: integration.ok ? "ok" : "queued",
           integrationErrors: integration.integrationErrors
         });
       }

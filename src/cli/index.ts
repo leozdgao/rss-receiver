@@ -6,6 +6,7 @@ import { syncSourcesFromYaml } from "../app/source-sync.js";
 import { summarizePending } from "../app/summary-runner.js";
 import { getConfigDiagnostics, loadConfig, requireSetupConfig } from "../infra/env/config.js";
 import { ensureEnvFile, updateEnvFile } from "../infra/env/env-file.js";
+import { createIntegrationDispatcher } from "../infra/integrations/dispatcher.js";
 import { ensureArchivedArticlesDataSource } from "../infra/integrations/notion/lifecycle.js";
 import { syncNotionOutbox } from "../infra/integrations/notion/sync.js";
 import { NotionClient } from "../infra/notion/notion.js";
@@ -55,6 +56,7 @@ async function main(): Promise<void> {
 
   const storage = new Storage(config.sqlitePath);
   storage.migrate();
+  const integrations = createIntegrationDispatcher(config, storage);
 
   try {
     if (command === "setup") {
@@ -77,7 +79,7 @@ async function main(): Promise<void> {
     }
 
     if (command === "run-once") {
-      const stats = await runOnce(config, storage);
+      const stats = await runOnce(config, storage, integrations);
       console.log(JSON.stringify(stats, null, 2));
       return;
     }
@@ -90,19 +92,19 @@ async function main(): Promise<void> {
     }
 
     if (command === "daemon") {
-      await startDaemon(config, storage);
+      await startDaemon(config, storage, integrations);
       return;
     }
 
     if (command === "summarize") {
-      const stats = await summarizePending(config, storage);
+      const stats = await summarizePending(config, storage, integrations);
       console.log(JSON.stringify(stats, null, 2));
       return;
     }
 
     if (command === "archive") {
       if (config.notionSyncEnabled) await ensureArchivedArticlesDataSource(config);
-      const stats = await archiveArticles(config, storage);
+      const stats = await archiveArticles(config, storage, integrations);
       console.log(JSON.stringify(stats, null, 2));
       return;
     }
