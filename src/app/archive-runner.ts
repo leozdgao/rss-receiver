@@ -1,27 +1,30 @@
 import type { AppConfig } from "../infra/env/config.js";
 import type { ArchiveCandidate, Storage } from "../infra/sqlite/storage.js";
 import { logInfo } from "../shared/logger.js";
-import { createIntegrationDispatcher, type IntegrationDispatcher } from "./integrations.js";
+import { createNoopIntegrationDispatcher, type IntegrationDispatcher } from "./integrations.js";
 
 export type ArchiveStats = {
   candidates: number;
   readStamped: number;
   archivedRead: number;
   archivedUnread: number;
-  removedFromNotion: number;
+  removedFromProjection: number;
   skipped: number;
 };
 
-export async function archiveArticles(config: AppConfig, storage: Storage): Promise<ArchiveStats> {
+export async function archiveArticles(
+  config: AppConfig,
+  storage: Storage,
+  integrations: IntegrationDispatcher = createNoopIntegrationDispatcher(storage)
+): Promise<ArchiveStats> {
   const now = new Date();
   const candidates = storage.listArchiveCandidates();
-  const integrations = createIntegrationDispatcher(config, storage);
   const stats: ArchiveStats = {
     candidates: candidates.length,
     readStamped: 0,
     archivedRead: 0,
     archivedUnread: 0,
-    removedFromNotion: 0,
+    removedFromProjection: 0,
     skipped: 0
   };
   logInfo("Archive run started.", {
@@ -59,11 +62,11 @@ export async function archiveArticles(config: AppConfig, storage: Storage): Prom
 
     if (article.status === "Archived" && article.removeFromProjectionAt && new Date(article.removeFromProjectionAt) <= now) {
       const integration = await integrations.removeArticleIndex(article.id);
-      stats.removedFromNotion += integration.ok ? 1 : 0;
-      logInfo("Archived article Notion removal handled.", {
+      stats.removedFromProjection += integration.ok ? 1 : 0;
+      logInfo("Archived article projection removal handled.", {
         contentId: article.id,
         title: article.title,
-        notionSync: integration.ok ? "ok" : "queued",
+        integrationSync: integration.ok ? "ok" : "queued",
         integrationErrors: integration.integrationErrors
       });
       continue;
@@ -96,7 +99,7 @@ async function archiveArticle(
     title: article.title,
     reason,
     removeFromProjectionAt,
-    notionSync: integration.ok ? "ok" : "queued",
+    integrationSync: integration.ok ? "ok" : "queued",
     integrationErrors: integration.integrationErrors
   });
 }

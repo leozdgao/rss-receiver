@@ -1,11 +1,11 @@
 import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
 import cron from "node-cron";
 import { archiveArticles } from "../app/archive-runner.js";
-import { createIntegrationDispatcher } from "../app/integrations.js";
 import { runOnce } from "../app/receiver.js";
 import { summarizePending } from "../app/summary-runner.js";
 import type { AppConfig } from "../infra/env/config.js";
 import { getConfigDiagnostics } from "../infra/env/config.js";
+import { createIntegrationDispatcher } from "../infra/integrations/dispatcher.js";
 import { ensureArchivedArticlesDataSource } from "../infra/integrations/notion/lifecycle.js";
 import { syncNotionOutbox } from "../infra/integrations/notion/sync.js";
 import { Storage, type JobType, type StoredJob } from "../infra/sqlite/storage.js";
@@ -126,11 +126,12 @@ export function createServiceApp(config: AppConfig, storage: Storage) {
 }
 
 async function runJob(type: JobType, config: AppConfig, storage: Storage): Promise<unknown> {
-  if (type === "run-once") return runOnce(config, storage);
-  if (type === "summarize") return summarizePending(config, storage);
+  const integrations = createIntegrationDispatcher(config, storage);
+  if (type === "run-once") return runOnce(config, storage, integrations);
+  if (type === "summarize") return summarizePending(config, storage, integrations);
   if (type === "archive") {
     if (config.notionSyncEnabled) await ensureArchivedArticlesDataSource(config);
-    return archiveArticles(config, storage);
+    return archiveArticles(config, storage, integrations);
   }
   if (type === "sync-notion") return syncNotionOutbox(config, storage);
   throw new Error(`Unsupported job type: ${type}`);
