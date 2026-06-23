@@ -6,7 +6,9 @@ import type { AppConfig } from "../infra/env/config.js";
 export type ServerProcessStatus = {
   running: boolean;
   pid?: number;
+  port?: number;
   pidPath: string;
+  portPath: string;
   logPath: string;
 };
 
@@ -29,7 +31,9 @@ export function startServiceInBackground(config: AppConfig): ServerProcessStatus
   return {
     running: true,
     pid: child.pid,
+    port: readPort(config.serverPortPath),
     pidPath: config.serverPidPath,
+    portPath: config.serverPortPath,
     logPath: config.serverLogPath
   };
 }
@@ -37,11 +41,13 @@ export function startServiceInBackground(config: AppConfig): ServerProcessStatus
 export function getServiceProcessStatus(config: AppConfig): ServerProcessStatus {
   const pid = readPid(config.serverPidPath);
   const running = pid ? isProcessRunning(pid) : false;
-  if (pid && !running) cleanupStalePidFile(config.serverPidPath, pid);
+  if (pid && !running) cleanupStaleRuntimeFiles(config, pid);
   return {
     running,
     pid,
+    port: running ? readPort(config.serverPortPath) : undefined,
     pidPath: config.serverPidPath,
+    portPath: config.serverPortPath,
     logPath: config.serverLogPath
   };
 }
@@ -51,7 +57,7 @@ export function stopServiceProcess(config: AppConfig): ServerProcessStatus {
   if (status.pid && status.running) {
     process.kill(status.pid, "SIGTERM");
   }
-  if (fs.existsSync(config.serverPidPath)) fs.unlinkSync(config.serverPidPath);
+  cleanupRuntimeFiles(config);
   return {
     ...status,
     running: false
@@ -66,7 +72,7 @@ export async function restartServiceProcess(config: AppConfig): Promise<ServerPr
     // otherwise the new server can hit EADDRINUSE on a fast restart.
     await waitForProcessExit(previous.pid, 10_000);
   }
-  if (fs.existsSync(config.serverPidPath)) fs.unlinkSync(config.serverPidPath);
+  cleanupRuntimeFiles(config);
   return startServiceInBackground(config);
 }
 
@@ -85,6 +91,13 @@ function readPid(pidPath: string): number | undefined {
   return Number.isFinite(pid) && pid > 0 ? pid : undefined;
 }
 
+function readPort(portPath: string): number | undefined {
+  if (!fs.existsSync(portPath)) return undefined;
+  const raw = fs.readFileSync(portPath, "utf8").trim();
+  const port = Number.parseInt(raw, 10);
+  return Number.isFinite(port) && port > 0 ? port : undefined;
+}
+
 function isProcessRunning(pid: number): boolean {
   try {
     process.kill(pid, 0);
@@ -94,12 +107,22 @@ function isProcessRunning(pid: number): boolean {
   }
 }
 
-function cleanupStalePidFile(pidPath: string, pid: number): void {
+function cleanupStaleRuntimeFiles(config: AppConfig, pid: number): void {
   try {
-    if (fs.existsSync(pidPath) && readPid(pidPath) === pid) {
-      fs.unlinkSync(pidPath);
+    if (fs.existsSync(config.serverPidPath) && readPid(config.serverPidPath) === pid) {
+      fs.unlinkSync(config.serverPidPath);
     }
+    if (fs.existsSync(config.serverPortPath)) fs.unlinkSync(config.serverPortPath);
   } catch {
-    // Status/start should stay best-effort even if a stale pid file cannot be removed.
+    // Status/start should stay best-effort even if stale runtime files cannot be removed.
+  }
+}
+
+function cleanupRuntimeFiles(config: AppConfig): void {
+  try {
+    if (fs.existsSync(config.serverPidPath)) fs.unlinkSync(config.serverPidPath);
+    if (fs.existsSync(config.serverPortPath)) fs.unlinkSync(config.serverPortPath);
+  } catch {
+    // Stop/restart should stay best-effort even if runtime files cannot be removed.
   }
 }

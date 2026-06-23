@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import type { AddressInfo } from "node:net";
 import path from "node:path";
 import Fastify, { type FastifyRequest } from "fastify";
 import cron from "node-cron";
@@ -12,6 +13,10 @@ import { ensureArchivedArticlesDataSource } from "../infra/integrations/notion/l
 import { syncNotionOutbox } from "../infra/integrations/notion/sync.js";
 import { Storage, type JobType, type StoredJob } from "../infra/sqlite/storage.js";
 import { configureLogger, getLogger, logError, logInfo } from "../shared/logger.js";
+import { registerActivityRoutes } from "./routes/activity-routes.js";
+import { registerContentRoutes } from "./routes/content-routes.js";
+import { registerRadarRoutes } from "./routes/radar-routes.js";
+import { registerSourceRoutes } from "./routes/source-routes.js";
 
 export async function startService(config: AppConfig): Promise<void> {
   await configureLogger({ level: config.logLevel, file: config.logFile, retentionDays: config.logRetentionDays });
@@ -33,10 +38,12 @@ export async function startService(config: AppConfig): Promise<void> {
     });
     throw error;
   }
+  const actualPort = getActualPort(app, config.apiPort);
+  writePortFile(config, actualPort);
   logInfo("RSS receiver service started.", {
     pid: process.pid,
     host: config.apiHost,
-    port: config.apiPort,
+    port: actualPort,
     auth: config.apiAuthToken ? "enabled" : "disabled"
   });
   startServiceScheduler(config, storage);
@@ -49,7 +56,7 @@ export async function startService(config: AppConfig): Promise<void> {
     try {
       await app.close();
       storage.close();
-      cleanupPidFile(config);
+      cleanupRuntimeFiles(config);
       logInfo("RSS receiver service stopped.", { signal, pid: process.pid });
       process.exit(0);
     } catch (error) {
@@ -70,28 +77,47 @@ function installProcessDiagnostics(config: AppConfig): void {
   process.on("uncaughtException", (error) => {
     logError("RSS receiver service uncaught exception; exiting.", error, { pid: process.pid });
     writeProcessFallbackLog(config, "ERROR", "RSS receiver service uncaught exception; exiting.", { error: serializeError(error) });
-    cleanupPidFile(config);
+    cleanupRuntimeFiles(config);
     process.exit(1);
   });
 
   process.on("unhandledRejection", (reason) => {
     logError("RSS receiver service unhandled rejection; exiting.", reason, { pid: process.pid });
     writeProcessFallbackLog(config, "ERROR", "RSS receiver service unhandled rejection; exiting.", { error: serializeError(reason) });
-    cleanupPidFile(config);
+    cleanupRuntimeFiles(config);
     process.exit(1);
   });
 
   process.on("exit", (code) => {
-    cleanupPidFile(config);
+    cleanupRuntimeFiles(config);
     writeProcessFallbackLog(config, "INFO", "RSS receiver service process exit.", { pid: process.pid, code });
   });
 }
 
-function cleanupPidFile(config: AppConfig): void {
+function getActualPort(app: ReturnType<typeof createServiceApp>, fallback: number): number {
+  const address = app.server.address() as AddressInfo | string | null;
+  return typeof address === "object" && address ? address.port : fallback;
+}
+
+function writePortFile(config: AppConfig, port: number): void {
   try {
-    if (!fs.existsSync(config.serverPidPath)) return;
-    const raw = fs.readFileSync(config.serverPidPath, "utf8").trim();
-    if (raw === String(process.pid)) fs.unlinkSync(config.serverPidPath);
+    fs.mkdirSync(path.dirname(config.serverPortPath), { recursive: true });
+    fs.writeFileSync(config.serverPortPath, `${port}\n`);
+  } catch (error) {
+    logError("RSS receiver service failed to write port file.", error, {
+      path: config.serverPortPath,
+      port
+    });
+  }
+}
+
+function cleanupRuntimeFiles(config: AppConfig): void {
+  try {
+    if (fs.existsSync(config.serverPidPath)) {
+      const raw = fs.readFileSync(config.serverPidPath, "utf8").trim();
+      if (raw === String(process.pid)) fs.unlinkSync(config.serverPidPath);
+    }
+    if (fs.existsSync(config.serverPortPath)) fs.unlinkSync(config.serverPortPath);
   } catch {
     // Process shutdown logging must not be allowed to throw.
   }
@@ -169,6 +195,11 @@ export function createServiceApp(config: AppConfig, storage: Storage) {
     const job = enqueueJob(storage, "sync-notion", config, () => runJob("sync-notion", config, storage), "api");
     return reply.code(202).send(job);
   });
+
+  registerRadarRoutes(app, storage);
+  registerActivityRoutes(app, storage);
+  registerContentRoutes(app, storage);
+  registerSourceRoutes(app, storage);
 
   app.get("/articles", async () => storage.listArticles());
 

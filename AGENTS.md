@@ -45,6 +45,7 @@ npm run config
 
 - SQLite database: `data/rss-receiver.sqlite`
 - Server PID file: `data/rss-receiver-server.pid`
+- Server port file: `data/rss-receiver-server.port`
 - Server log: `logs/rss-receiver-server.log`
 - Summary skills: `summary-skills/*.json`
 - Env sample: `.env.example`
@@ -172,6 +173,14 @@ npm run build
 node dist/cli/index.js server:stop
 node dist/cli/index.js server:start
 ```
+
+## Desktop App Notes
+
+- Desktop UI must call the local API; it must not read SQLite or `.env` directly.
+- Desktop native runtime should discover the local API through the server port file, not a hardcoded port.
+- Product language should prefer `Source`, `Content Item`, `Activity`, and `Local engine`.
+- Avoid exposing `job`, `outbox`, `pid`, `daemon`, or `server` in default desktop UI copy.
+- Radar is the default desktop surface; Inbox is the second primary workflow.
 
 ## SQLite Notes
 

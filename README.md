@@ -28,12 +28,20 @@ Notion sync failures do not roll back SQLite changes. Failed Notion operations a
 
 There is no Notion-to-SQLite summary reconciliation in the normal flow.
 
-Desktop client planning lives in:
+## Desktop App
 
-- [Desktop product spec](docs/desktop/product-spec.md)
-- [Desktop UX spec](docs/desktop/ux-spec.md)
-- [Desktop core feature designs](docs/desktop/core-designs.md)
-- [Desktop local API contract](docs/desktop/api-contract.md)
+The desktop client is a Tauri + React shell over the local Fastify API.
+
+The product entry point is `Radar`, a Last 7 Days technical briefing built from SQLite content, summaries, topics, and signals. `Inbox` remains the fast workflow for clearing unread content.
+
+When running as a Tauri app, the desktop client discovers the local API port from `SERVER_PORT_PATH` instead of assuming a fixed port. Set `API_PORT=0` to let the service bind an available local port and write the selected value to that file.
+
+Useful commands:
+
+```bash
+npm run desktop:dev
+npm run desktop:build
+```
 
 ## Setup
 
@@ -99,6 +107,7 @@ API_HOST=127.0.0.1
 API_PORT=3766
 API_AUTH_TOKEN=
 SERVER_PID_PATH=data/rss-receiver-server.pid
+SERVER_PORT_PATH=data/rss-receiver-server.port
 SERVER_LOG_PATH=logs/rss-receiver-server.log
 
 SUMMARY_SKILLS_DIR=summary-skills
@@ -130,6 +139,9 @@ npm run server:start
 npm run server:status
 npm run server:stop
 npm run config
+npm run desktop:dev
+npm run desktop:build
+npm run desktop:tauri
 npm test
 npm run typecheck
 npm run build

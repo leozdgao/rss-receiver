@@ -6,6 +6,8 @@ data/*.sqlite-wal
 data/*.pid
 coverage/
 dist/
+apps/desktop/src-tauri/gen/
+apps/desktop/src-tauri/target/
 logs/
 .codebase-memory/
 .superpowers/
