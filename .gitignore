@@ -8,4 +8,5 @@ coverage/
 dist/
 logs/
 .codebase-memory/
+.superpowers/
 .DS_Store
