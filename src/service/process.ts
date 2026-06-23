@@ -36,8 +36,10 @@ export function startServiceInBackground(config: AppConfig): ServerProcessStatus
 
 export function getServiceProcessStatus(config: AppConfig): ServerProcessStatus {
   const pid = readPid(config.serverPidPath);
+  const running = pid ? isProcessRunning(pid) : false;
+  if (pid && !running) cleanupStalePidFile(config.serverPidPath, pid);
   return {
-    running: pid ? isProcessRunning(pid) : false,
+    running,
     pid,
     pidPath: config.serverPidPath,
     logPath: config.serverLogPath
@@ -89,5 +91,15 @@ function isProcessRunning(pid: number): boolean {
     return true;
   } catch {
     return false;
+  }
+}
+
+function cleanupStalePidFile(pidPath: string, pid: number): void {
+  try {
+    if (fs.existsSync(pidPath) && readPid(pidPath) === pid) {
+      fs.unlinkSync(pidPath);
+    }
+  } catch {
+    // Status/start should stay best-effort even if a stale pid file cannot be removed.
   }
 }

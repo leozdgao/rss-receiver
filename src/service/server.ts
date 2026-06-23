@@ -1,4 +1,6 @@
-import Fastify, { type FastifyInstance, type FastifyRequest } from "fastify";
+import fs from "node:fs";
+import path from "node:path";
+import Fastify, { type FastifyRequest } from "fastify";
 import cron from "node-cron";
 import { archiveArticles } from "../app/archive-runner.js";
 import { runOnce } from "../app/receiver.js";
@@ -13,6 +15,7 @@ import { configureLogger, getLogger, logError, logInfo } from "../shared/logger.
 
 export async function startService(config: AppConfig): Promise<void> {
   await configureLogger({ level: config.logLevel, file: config.logFile, retentionDays: config.logRetentionDays });
+  installProcessDiagnostics(config);
   const storage = new Storage(config.sqlitePath);
   storage.migrate();
   const reclaimed = storage.reclaimInterruptedWork();
@@ -21,21 +24,103 @@ export async function startService(config: AppConfig): Promise<void> {
   }
   const app = createServiceApp(config, storage);
 
-  await app.listen({ host: config.apiHost, port: config.apiPort });
+  try {
+    await app.listen({ host: config.apiHost, port: config.apiPort });
+  } catch (error) {
+    logError("RSS receiver service failed to start.", error, {
+      host: config.apiHost,
+      port: config.apiPort
+    });
+    throw error;
+  }
   logInfo("RSS receiver service started.", {
+    pid: process.pid,
     host: config.apiHost,
     port: config.apiPort,
     auth: config.apiAuthToken ? "enabled" : "disabled"
   });
   startServiceScheduler(config, storage);
 
-  const close = async () => {
-    await app.close();
-    storage.close();
-    process.exit(0);
+  let closing = false;
+  const close = async (signal: NodeJS.Signals) => {
+    if (closing) return;
+    closing = true;
+    logInfo("RSS receiver service shutdown requested.", { signal, pid: process.pid });
+    try {
+      await app.close();
+      storage.close();
+      cleanupPidFile(config);
+      logInfo("RSS receiver service stopped.", { signal, pid: process.pid });
+      process.exit(0);
+    } catch (error) {
+      logError("RSS receiver service shutdown failed.", error, { signal, pid: process.pid });
+      process.exit(1);
+    }
   };
-  process.once("SIGINT", () => void close());
-  process.once("SIGTERM", () => void close());
+  process.once("SIGINT", () => void close("SIGINT"));
+  process.once("SIGTERM", () => void close("SIGTERM"));
+}
+
+let processDiagnosticsInstalled = false;
+
+function installProcessDiagnostics(config: AppConfig): void {
+  if (processDiagnosticsInstalled) return;
+  processDiagnosticsInstalled = true;
+
+  process.on("uncaughtException", (error) => {
+    logError("RSS receiver service uncaught exception; exiting.", error, { pid: process.pid });
+    writeProcessFallbackLog(config, "ERROR", "RSS receiver service uncaught exception; exiting.", { error: serializeError(error) });
+    cleanupPidFile(config);
+    process.exit(1);
+  });
+
+  process.on("unhandledRejection", (reason) => {
+    logError("RSS receiver service unhandled rejection; exiting.", reason, { pid: process.pid });
+    writeProcessFallbackLog(config, "ERROR", "RSS receiver service unhandled rejection; exiting.", { error: serializeError(reason) });
+    cleanupPidFile(config);
+    process.exit(1);
+  });
+
+  process.on("exit", (code) => {
+    cleanupPidFile(config);
+    writeProcessFallbackLog(config, "INFO", "RSS receiver service process exit.", { pid: process.pid, code });
+  });
+}
+
+function cleanupPidFile(config: AppConfig): void {
+  try {
+    if (!fs.existsSync(config.serverPidPath)) return;
+    const raw = fs.readFileSync(config.serverPidPath, "utf8").trim();
+    if (raw === String(process.pid)) fs.unlinkSync(config.serverPidPath);
+  } catch {
+    // Process shutdown logging must not be allowed to throw.
+  }
+}
+
+function writeProcessFallbackLog(config: AppConfig, level: "INFO" | "ERROR", message: string, fields: Record<string, unknown>): void {
+  try {
+    fs.mkdirSync(path.dirname(config.serverLogPath), { recursive: true });
+    fs.appendFileSync(
+      config.serverLogPath,
+      `[${new Date().toISOString()}] ${level} ${message} ${JSON.stringify(fields)}\n`
+    );
+  } catch {
+    // Last-chance logging is best-effort.
+  }
+}
+
+function serializeError(error: unknown): Record<string, unknown> {
+  if (error instanceof Error) {
+    return {
+      type: error.name,
+      message: error.message,
+      stack: error.stack
+    };
+  }
+  return {
+    type: typeof error,
+    message: String(error)
+  };
 }
 
 export function createServiceApp(config: AppConfig, storage: Storage) {
