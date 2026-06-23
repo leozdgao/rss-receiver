@@ -9,4 +9,5 @@ dist/
 logs/
 .codebase-memory/
 .superpowers/
+.worktrees/
 .DS_Store
