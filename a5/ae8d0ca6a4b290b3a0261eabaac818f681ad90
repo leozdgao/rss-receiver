@@ -1,0 +1,24 @@
+apps/desktop/src/app/api.ts
+  s_2d93eaf55c05ff::t_8f7572134c898c 3-38
+  s_2d93eaf55c05ff::t_8d9c7955a4d24e 1-2
+apps/desktop/src/main.tsx
+  s_2d93eaf55c05ff::t_8f7572134c898c 5,10-12
+apps/desktop/src/app/query.tsx
+  s_2d93eaf55c05ff::t_8f7572134c898c 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "a5ae8d0ca6a4b290b3a0261eabaac818f681ad90",
+  "prompts": {},
+  "sessions": {
+    "s_2d93eaf55c05ff": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea844-b602-7923-a161-f2d968955b9f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
