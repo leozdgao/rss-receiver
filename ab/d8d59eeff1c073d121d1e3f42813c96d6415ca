@@ -1,0 +1,22 @@
+docs/superpowers/specs/2026-06-23-desktop-app-design.md
+  s_2d93eaf55c05ff::t_529b14cf72b79b 466
+  s_2d93eaf55c05ff::t_7c047627a814f8 1-465,467-471
+.gitignore
+  s_2d93eaf55c05ff::t_7c047627a814f8 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "abd8d59eeff1c073d121d1e3f42813c96d6415ca",
+  "prompts": {},
+  "sessions": {
+    "s_2d93eaf55c05ff": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea844-b602-7923-a161-f2d968955b9f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
