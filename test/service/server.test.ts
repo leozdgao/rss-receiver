@@ -25,6 +25,7 @@ function testConfig(overrides: Partial<AppConfig> = {}): AppConfig {
     apiHost: "127.0.0.1",
     apiPort: 3766,
     serverPidPath: path.join(fs.mkdtempSync(path.join(os.tmpdir(), "rss-service-pid-")), "server.pid"),
+    serverPortPath: path.join(fs.mkdtempSync(path.join(os.tmpdir(), "rss-service-port-")), "server.port"),
     serverLogPath: path.join(fs.mkdtempSync(path.join(os.tmpdir(), "rss-service-log-")), "server.log"),
     logLevel: "silent",
     logFile: path.join(fs.mkdtempSync(path.join(os.tmpdir(), "rss-service-log-")), "test.log"),

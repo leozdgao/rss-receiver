@@ -28,6 +28,7 @@ export type AppConfig = {
   apiPort: number;
   apiAuthToken?: string;
   serverPidPath: string;
+  serverPortPath: string;
   serverLogPath: string;
   logLevel: string;
   logFile: string;
@@ -59,6 +60,16 @@ function readInt(name: string, fallback: number): number {
   const parsed = Number.parseInt(raw, 10);
   if (!Number.isFinite(parsed) || parsed <= 0) {
     throw new Error(`${name} must be a positive integer.`);
+  }
+  return parsed;
+}
+
+function readNonNegativeInt(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error(`${name} must be a non-negative integer.`);
   }
   return parsed;
 }
@@ -115,9 +126,10 @@ export function loadConfig(): AppConfig {
     unreadArchiveAfterDays: readInt("UNREAD_ARCHIVE_AFTER_DAYS", 30),
     removeFromNotionAfterArchiveDays: readInt("REMOVE_FROM_NOTION_AFTER_ARCHIVE_DAYS", 60),
     apiHost: process.env.API_HOST?.trim() || "127.0.0.1",
-    apiPort: readInt("API_PORT", 3766),
+    apiPort: readNonNegativeInt("API_PORT", 3766),
     apiAuthToken: readOptionalString("API_AUTH_TOKEN"),
     serverPidPath: process.env.SERVER_PID_PATH ?? path.join("data", "rss-receiver-server.pid"),
+    serverPortPath: process.env.SERVER_PORT_PATH ?? path.join("data", "rss-receiver-server.port"),
     serverLogPath: process.env.SERVER_LOG_PATH ?? path.join("logs", "rss-receiver-server.log"),
     logLevel: readOptionalString("LOG_LEVEL") ?? "info",
     logFile: process.env.LOG_FILE ?? path.join("logs", "rss-receiver.log"),
