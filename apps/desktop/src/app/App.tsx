@@ -2,20 +2,26 @@ import {
   Activity,
   Inbox,
   Radar,
-  Rss,
   Settings,
-  SlidersHorizontal
+  SquareStack
 } from "lucide-react";
+import { useState } from "react";
+import { InboxPage } from "../pages/InboxPage";
+import { RadarPage } from "../pages/RadarPage";
 
 const navigation = [
-  { label: "Radar", icon: Radar, active: true },
-  { label: "Inbox", icon: Inbox },
-  { label: "Sources", icon: Rss },
-  { label: "Activity", icon: Activity },
-  { label: "Settings", icon: Settings }
-];
+  { id: "radar", label: "Radar", icon: Radar },
+  { id: "inbox", label: "Inbox", icon: Inbox },
+  { id: "sources", label: "Sources", icon: SquareStack },
+  { id: "activity", label: "Activity", icon: Activity },
+  { id: "settings", label: "Settings", icon: Settings }
+] as const;
+
+type Page = (typeof navigation)[number]["id"];
 
 export function App() {
+  const [page, setPage] = useState<Page>("radar");
+
   return (
     <div className="app-shell">
       <aside className="sidebar" aria-label="Primary navigation">
@@ -30,8 +36,9 @@ export function App() {
         <nav className="nav-list">
           {navigation.map((item) => (
             <button
-              className={item.active ? "nav-item nav-item-active" : "nav-item"}
+              className={page === item.id ? "nav-item nav-item-active" : "nav-item"}
               key={item.label}
+              onClick={() => setPage(item.id)}
               type="button"
             >
               <item.icon size={18} aria-hidden="true" />
@@ -42,20 +49,43 @@ export function App() {
       </aside>
 
       <main className="content">
-        <header className="content-header">
-          <div>
-            <p className="section-kicker">Radar</p>
-            <h1>Last 7 Days Radar</h1>
-          </div>
-          <button className="icon-button" type="button" aria-label="View controls">
-            <SlidersHorizontal size={18} aria-hidden="true" />
-          </button>
-        </header>
-
-        <section className="ready-panel" aria-label="Desktop shell status">
-          <p>Desktop shell ready.</p>
-        </section>
+        {page === "radar" && <RadarPage />}
+        {page === "inbox" && <InboxPage />}
+        {page === "sources" && (
+          <PlaceholderPage
+            description="Review the feeds that shape your radar and decide which voices belong in the mix."
+            title="Sources"
+          />
+        )}
+        {page === "activity" && (
+          <PlaceholderPage
+            description="See recent reading updates, new signals, and summary progress in one calm timeline."
+            title="Activity"
+          />
+        )}
+        {page === "settings" && (
+          <PlaceholderPage
+            description="Tune topics, reading preferences, and integrations for your local workbench."
+            title="Settings"
+          />
+        )}
       </main>
     </div>
+  );
+}
+
+function PlaceholderPage({ description, title }: { description: string; title: string }) {
+  return (
+    <section className="page">
+      <header className="page-header">
+        <div>
+          <h1>{title}</h1>
+          <p>{description}</p>
+        </div>
+      </header>
+      <section className="panel placeholder-panel">
+        <p>This view will be available in a later desktop pass.</p>
+      </section>
+    </section>
   );
 }
