@@ -1,0 +1,21 @@
+src/app/activity/activity-runner.ts
+  s_2d93eaf55c05ff::t_f6e31186a9c1c1 6-27,55-62
+test/app/activity.test.ts
+  s_2d93eaf55c05ff::t_ec6053656207a1 4,9-12,29-91
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "8d3134596d3a6cbbda75e7350352aa0fbbec8e52",
+  "prompts": {},
+  "sessions": {
+    "s_2d93eaf55c05ff": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea844-b602-7923-a161-f2d968955b9f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
