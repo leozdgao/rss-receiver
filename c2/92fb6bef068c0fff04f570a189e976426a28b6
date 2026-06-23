@@ -1,0 +1,21 @@
+README.md
+  s_2d93eaf55c05ff::t_aa632494a8d0cf 31,33-42,139-141
+AGENTS.md
+  s_2d93eaf55c05ff::t_aa632494a8d0cf 176-182
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "c292fb6bef068c0fff04f570a189e976426a28b6",
+  "prompts": {},
+  "sessions": {
+    "s_2d93eaf55c05ff": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea844-b602-7923-a161-f2d968955b9f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
