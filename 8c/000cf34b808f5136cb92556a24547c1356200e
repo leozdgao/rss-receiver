@@ -1,0 +1,35 @@
+src/service/server.ts
+  s_2d93eaf55c05ff::t_f4e7c9a533bd7b 2,41-42,46,59,80,87,92,97-102,104-120
+apps/desktop/src-tauri/src/lib.rs
+  s_2d93eaf55c05ff::t_b87007442ac417 1-35,38
+.env.example
+  s_2d93eaf55c05ff::t_67bf7e4f7718ad 26
+apps/desktop/src/app/api.ts
+  s_2d93eaf55c05ff::t_b87007442ac417 8-10,12,17-18,29-30,44-62
+src/service/process.ts
+  s_2d93eaf55c05ff::t_4aa9a9f321b84e 9,11,34,36,44,48,50,60,75,94-100,110,112-113,115-124,126
+AGENTS.md
+  s_2d93eaf55c05ff::t_67bf7e4f7718ad 48,180
+test/service/server.test.ts
+  s_2d93eaf55c05ff::t_67bf7e4f7718ad 28
+README.md
+  s_2d93eaf55c05ff::t_67bf7e4f7718ad 37-38,110
+src/infra/env/config.ts
+  s_2d93eaf55c05ff::t_27f56aded0736d 31,67-76,129,132
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "8c000cf34b808f5136cb92556a24547c1356200e",
+  "prompts": {},
+  "sessions": {
+    "s_2d93eaf55c05ff": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea844-b602-7923-a161-f2d968955b9f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
