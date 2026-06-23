@@ -1,0 +1,39 @@
+apps/desktop/src/main.tsx
+  s_2d93eaf55c05ff::t_1bbdd22c10bd8e 1-11
+apps/desktop/tsconfig.json
+  s_2d93eaf55c05ff::t_1bbdd22c10bd8e 1-20
+apps/desktop/src/app/App.tsx
+  s_2d93eaf55c05ff::t_1bbdd22c10bd8e 1-61
+apps/desktop/src-tauri/tauri.conf.json
+  s_2d93eaf55c05ff::t_1bbdd22c10bd8e 1-30
+apps/desktop/src-tauri/src/main.rs
+  s_2d93eaf55c05ff::t_1bbdd22c10bd8e 1-5
+apps/desktop/src/styles.css
+  s_2d93eaf55c05ff::t_1bbdd22c10bd8e 1-145
+apps/desktop/package.json
+  s_2d93eaf55c05ff::t_1bbdd22c10bd8e 1-26
+package.json
+  s_2d93eaf55c05ff::t_1bbdd22c10bd8e 30-32
+apps/desktop/vite.config.ts
+  s_2d93eaf55c05ff::t_1bbdd22c10bd8e 1-14
+apps/desktop/src-tauri/Cargo.toml
+  s_2d93eaf55c05ff::t_1bbdd22c10bd8e 1-16
+apps/desktop/index.html
+  s_2d93eaf55c05ff::t_1bbdd22c10bd8e 1-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "00157ccceb667f1ee89bcc00792aaef32182ea0d",
+  "prompts": {},
+  "sessions": {
+    "s_2d93eaf55c05ff": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea844-b602-7923-a161-f2d968955b9f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
