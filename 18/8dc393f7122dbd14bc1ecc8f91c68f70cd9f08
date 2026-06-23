@@ -1,0 +1,29 @@
+src/infra/sqlite/schema.ts
+  s_2d93eaf55c05ff::t_19485806189306 97-123
+src/infra/sqlite/content-signals-repository.ts
+  s_2d93eaf55c05ff::t_e7aff2b322ff0d 1-52
+src/infra/sqlite/radar-repository.ts
+  s_2d93eaf55c05ff::t_5b9e53cd524d1e 1-105
+test/infra/storage.test.ts
+  s_2d93eaf55c05ff::t_0cf298181403eb 161-222
+src/infra/sqlite/storage.ts
+  s_2d93eaf55c05ff::t_72aad75a906fca 5,9,25,31,33-34,54,60,62-63,73,77,86,90,235-253
+src/infra/sqlite/types.ts
+  s_2d93eaf55c05ff::t_a02c4c679d2680 1-2,101-142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "188dc393f7122dbd14bc1ecc8f91c68f70cd9f08",
+  "prompts": {},
+  "sessions": {
+    "s_2d93eaf55c05ff": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea844-b602-7923-a161-f2d968955b9f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
