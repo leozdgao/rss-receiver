@@ -2,9 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { ArticlesRepository } from "./articles-repository.js";
+import { ContentSignalsRepository } from "./content-signals-repository.js";
 import { JobsRepository } from "./jobs-repository.js";
 import { MaintenanceRepository } from "./maintenance-repository.js";
 import { OutboxRepository } from "./outbox-repository.js";
+import { RadarRepository } from "./radar-repository.js";
 import { migrateDatabase } from "./schema.js";
 import { SourcesRepository } from "./sources-repository.js";
 import type {
@@ -20,12 +22,16 @@ import type {
   OutboxItem,
   OutboxStatus,
   PendingContent,
+  RadarWindow,
   Source,
   SourceInput,
   SourceIntegration,
   StoredArticle,
   StoredArticleInput,
+  StoredContentSignal,
   StoredJob,
+  StoredRadarBrief,
+  StoredRadarItem,
   StoredSummary,
   SummarizableArticle,
   SummaryInput,
@@ -45,12 +51,16 @@ export type {
   OutboxItem,
   OutboxStatus,
   PendingContent,
+  RadarWindow,
   Source,
   SourceInput,
   SourceIntegration,
   StoredArticle,
   StoredArticleInput,
+  StoredContentSignal,
   StoredJob,
+  StoredRadarBrief,
+  StoredRadarItem,
   StoredSummary,
   SummarizableArticle,
   SummaryInput,
@@ -60,9 +70,11 @@ export type {
 export class Storage {
   private readonly db: Database.Database;
   private readonly articles: ArticlesRepository;
+  private readonly contentSignals: ContentSignalsRepository;
   private readonly jobs: JobsRepository;
   private readonly maintenance: MaintenanceRepository;
   private readonly outbox: OutboxRepository;
+  private readonly radar: RadarRepository;
   private readonly sources: SourcesRepository;
 
   constructor(sqlitePath: string) {
@@ -71,9 +83,11 @@ export class Storage {
     this.db.pragma("journal_mode = WAL");
     this.db.pragma("foreign_keys = ON");
     this.articles = new ArticlesRepository(this.db);
+    this.contentSignals = new ContentSignalsRepository(this.db);
     this.jobs = new JobsRepository(this.db);
     this.maintenance = new MaintenanceRepository(this.db);
     this.outbox = new OutboxRepository(this.db);
+    this.radar = new RadarRepository(this.db);
     this.sources = new SourcesRepository(this.db);
   }
 
@@ -216,6 +230,26 @@ export class Storage {
 
   getSummary(articleId: number): StoredSummary | undefined {
     return this.articles.getSummary(articleId);
+  }
+
+  saveContentSignal(signal: StoredContentSignal): void {
+    this.contentSignals.save(signal);
+  }
+
+  getContentSignal(articleId: number): StoredContentSignal | undefined {
+    return this.contentSignals.get(articleId);
+  }
+
+  listRadarItems(window: RadarWindow): StoredRadarItem[] {
+    return this.radar.listItems(window);
+  }
+
+  saveRadarBrief(brief: StoredRadarBrief): void {
+    this.radar.saveBrief(brief);
+  }
+
+  getRadarBrief(windowStart: string, windowEnd: string): StoredRadarBrief | undefined {
+    return this.radar.getBrief(windowStart, windowEnd);
   }
 
   listArchiveCandidates(): ArchiveCandidate[] {

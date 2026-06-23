@@ -158,4 +158,66 @@ describe("Storage", () => {
     expect(columns.map((column) => column.name)).not.toContain("notion_blocks_json");
     storage.close();
   });
+
+  it("stores content signals and radar briefs", () => {
+    const dbPath = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "rss-radar-")), "test.sqlite");
+    const storage = new Storage(dbPath);
+    storage.migrate();
+    const source = storage.upsertSource({
+      name: "LangChain Blog",
+      url: "https://www.langchain.com/blog/rss.xml",
+      enabled: true
+    });
+    const article = storage.upsertArticle({
+      sourceId: source.id,
+      feedTitle: source.name,
+      feedUrl: source.url,
+      externalId: "entry-1",
+      url: "https://example.com/post",
+      title: "Agent evaluation checklist",
+      publishedAt: "2026-06-21T00:00:00.000Z",
+      contentHash: "hash-1"
+    });
+
+    storage.saveContentSignal({
+      articleId: article.id,
+      topicId: "ai-agents",
+      topicName: "AI Agents",
+      signalType: "Deep Read",
+      whyRead: "Strong production agent evaluation guidance.",
+      importance: 4,
+      audience: "Agent builders",
+      contentType: "Article",
+      generatedAt: "2026-06-23T00:00:00.000Z"
+    });
+
+    expect(storage.getContentSignal(article.id)).toMatchObject({
+      articleId: article.id,
+      topicId: "ai-agents",
+      signalType: "Deep Read",
+      importance: 4
+    });
+    expect(storage.listRadarItems({
+      since: "2026-06-16T00:00:00.000Z",
+      until: "2026-06-23T23:59:59.999Z"
+    })[0]).toMatchObject({
+      id: article.id,
+      sourceName: "LangChain Blog",
+      topicId: "ai-agents"
+    });
+
+    storage.saveRadarBrief({
+      windowStart: "2026-06-16T00:00:00.000Z",
+      windowEnd: "2026-06-23T23:59:59.999Z",
+      markdown: "## This week",
+      model: "test-model",
+      generatedAt: "2026-06-23T00:00:00.000Z"
+    });
+    expect(storage.getRadarBrief("2026-06-16T00:00:00.000Z", "2026-06-23T23:59:59.999Z")).toMatchObject({
+      markdown: "## This week",
+      model: "test-model"
+    });
+
+    storage.close();
+  });
 });

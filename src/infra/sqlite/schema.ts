@@ -94,6 +94,33 @@ export function migrateDatabase(db: Database.Database): void {
       FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS content_signals (
+      article_id INTEGER PRIMARY KEY,
+      topic_id TEXT NOT NULL,
+      topic_name TEXT NOT NULL,
+      signal_type TEXT NOT NULL,
+      why_read TEXT NOT NULL,
+      importance INTEGER NOT NULL,
+      audience TEXT NOT NULL,
+      content_type TEXT NOT NULL,
+      generated_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(article_id) REFERENCES articles(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS radar_briefs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      window_start TEXT NOT NULL,
+      window_end TEXT NOT NULL,
+      markdown TEXT NOT NULL,
+      model TEXT NOT NULL,
+      generated_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(window_start, window_end)
+    );
+
     CREATE TABLE IF NOT EXISTS integration_outbox (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       integration TEXT NOT NULL,

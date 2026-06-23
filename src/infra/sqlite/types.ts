@@ -1,3 +1,5 @@
+import type { SignalType } from "../../domain/signals/signals.js";
+
 export type ArticleStatus = "Unread" | "Read" | "Archived";
 export type ExtractionStatus = "Success" | "Failed";
 export type SummaryStatus = "Pending" | "Failed" | "Done";
@@ -95,6 +97,49 @@ export type SummaryInput = {
 };
 
 export type StoredSummary = SummaryInput;
+
+export type StoredContentSignal = {
+  articleId: number;
+  topicId: string;
+  topicName: string;
+  signalType: SignalType;
+  whyRead: string;
+  importance: number;
+  audience: string;
+  contentType: string;
+  generatedAt: string;
+};
+
+export type StoredRadarItem = StoredArticle & {
+  sourceName: string;
+  topicId?: string;
+  topicName?: string;
+  signalType?: SignalType;
+  whyRead?: string;
+  importance?: number;
+  audience?: string;
+  contentType?: string;
+  signalGeneratedAt?: string;
+  summaryMarkdown?: string;
+  summaryModel?: string;
+  summarySkill?: string;
+  summarySkillVersion?: number;
+  summarizedAt?: string;
+};
+
+export type RadarWindow = {
+  since: string;
+  until: string;
+};
+
+export type StoredRadarBrief = {
+  id?: number;
+  windowStart: string;
+  windowEnd: string;
+  markdown: string;
+  model: string;
+  generatedAt: string;
+};
 
 export type SummarizableArticle = PendingContent & {
   summaryStatus: SummaryStatus;
