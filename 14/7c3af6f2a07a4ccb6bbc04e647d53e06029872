@@ -1,0 +1,22 @@
+test/domain/signals.test.ts
+  s_2d93eaf55c05ff::t_e8061f5f7fd502 28-30,32-38
+  s_2d93eaf55c05ff::t_2b074f2ab9f039 31
+src/domain/signals/signals.ts
+  s_2d93eaf55c05ff::t_37f251204d2cc2 31,33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "147c3af6f2a07a4ccb6bbc04e647d53e06029872",
+  "prompts": {},
+  "sessions": {
+    "s_2d93eaf55c05ff": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea844-b602-7923-a161-f2d968955b9f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
