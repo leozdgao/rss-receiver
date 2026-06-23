@@ -1,0 +1,23 @@
+test/app/radar.test.ts
+  s_2d93eaf55c05ff::t_04ad31dec19b02 1-53
+src/app/radar/radar-types.ts
+  s_2d93eaf55c05ff::t_004fd5b168f5c9 1-44
+src/app/radar/radar-runner.ts
+  s_2d93eaf55c05ff::t_25ef98e6913165 1-97
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "4a61594dfc38adbc418968bdcea67506db40f95e",
+  "prompts": {},
+  "sessions": {
+    "s_2d93eaf55c05ff": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea844-b602-7923-a161-f2d968955b9f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
