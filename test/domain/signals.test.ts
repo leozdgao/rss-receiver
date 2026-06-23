@@ -25,4 +25,15 @@ describe("content signals", () => {
     });
     expect(signal.whyRead).toContain("LangChain Blog");
   });
+
+  it("classifies boundary-separated new tokens as new tool signals", () => {
+    const signal = buildRuleSignal({
+      title: "New: agent toolkit",
+      sourceName: "LangChain Blog",
+      topicId: "ai-agents",
+      topicName: "AI Agents"
+    });
+
+    expect(signal.signalType).toBe("New Tool");
+  });
 });

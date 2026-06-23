@@ -28,8 +28,9 @@ export function normalizeSignalType(value: string): SignalType {
 
 export function buildRuleSignal(input: RuleSignalInput): ContentSignalDraft {
   const lowerTitle = input.title.toLowerCase();
+  const hasNewToken = /(^|[^a-z0-9])new($|[^a-z0-9])/.test(lowerTitle);
   const signalType: SignalType =
-    lowerTitle.includes("introducing") || lowerTitle.includes("launch") || lowerTitle.includes("new ")
+    lowerTitle.includes("introducing") || lowerTitle.includes("launch") || hasNewToken
       ? "New Tool"
       : lowerTitle.includes("risk") || lowerTitle.includes("security")
         ? "Risk"
