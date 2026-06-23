@@ -5,7 +5,7 @@ export type ApiConfig = {
   token?: string;
 };
 
-const config: ApiConfig = {
+export const config: ApiConfig = {
   baseUrl: import.meta.env.VITE_RSS_RECEIVER_API_URL ?? "http://127.0.0.1:3766",
   token: import.meta.env.VITE_RSS_RECEIVER_API_TOKEN
 };
