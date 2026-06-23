@@ -1,0 +1,21 @@
+src/domain/topics/taxonomy.ts
+  s_2d93eaf55c05ff::t_04327adbe0b0d1 1-64
+test/domain/topics.test.ts
+  s_2d93eaf55c05ff::t_4627fe76f7ed49 1-29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "a09aabd709b153238ffbcdf74344f31c2ec050f1",
+  "prompts": {},
+  "sessions": {
+    "s_2d93eaf55c05ff": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea844-b602-7923-a161-f2d968955b9f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
