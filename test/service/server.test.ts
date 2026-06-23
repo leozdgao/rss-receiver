@@ -103,4 +103,84 @@ describe("createServiceApp", () => {
     await app.close();
     storage.close();
   });
+
+  it("serves radar topics for the desktop API", async () => {
+    const config = testConfig();
+    const storage = new Storage(config.sqlitePath);
+    storage.migrate();
+    const source = storage.upsertSource({ name: "LangChain Blog", url: "https://example.com/rss.xml", enabled: true });
+    const article = storage.upsertArticle({
+      sourceId: source.id,
+      feedTitle: source.name,
+      feedUrl: source.url,
+      externalId: "entry-1",
+      url: "https://example.com/agent",
+      title: "Agent evaluation checklist",
+      publishedAt: new Date().toISOString(),
+      contentHash: "hash-1"
+    });
+    storage.saveContentSignal({
+      articleId: article.id,
+      topicId: "ai-agents",
+      topicName: "AI Agents",
+      signalType: "Deep Read",
+      whyRead: "Strong guidance for evaluating production agents.",
+      importance: 4,
+      audience: "Agent builders",
+      contentType: "Article",
+      generatedAt: new Date().toISOString()
+    });
+    const app = createServiceApp(config, storage);
+
+    const response = await app.inject({ method: "GET", url: "/radar?window=7d" });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().topics[0]).toMatchObject({ topicId: "ai-agents" });
+
+    await app.close();
+    storage.close();
+  });
+
+  it("serves activity for the desktop API", async () => {
+    const config = testConfig();
+    const storage = new Storage(config.sqlitePath);
+    storage.migrate();
+    const app = createServiceApp(config, storage);
+
+    const response = await app.inject({ method: "GET", url: "/activity" });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toHaveProperty("items");
+
+    await app.close();
+    storage.close();
+  });
+
+  it("serves content items with RSS source type for the desktop API", async () => {
+    const config = testConfig();
+    const storage = new Storage(config.sqlitePath);
+    storage.migrate();
+    const source = storage.upsertSource({ name: "LangChain Blog", url: "https://example.com/rss.xml", enabled: true });
+    const article = storage.upsertArticle({
+      sourceId: source.id,
+      feedTitle: source.name,
+      feedUrl: source.url,
+      externalId: "entry-1",
+      url: "https://example.com/agent",
+      title: "Agent evaluation checklist",
+      contentHash: "hash-1"
+    });
+    const app = createServiceApp(config, storage);
+
+    const response = await app.inject({ method: "GET", url: "/content-items" });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().items[0]).toMatchObject({
+      id: article.id,
+      sourceType: "RSS"
+    });
+
+    await app.close();
+    storage.close();
+  });
 });

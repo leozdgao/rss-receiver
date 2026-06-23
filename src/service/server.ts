@@ -12,6 +12,10 @@ import { ensureArchivedArticlesDataSource } from "../infra/integrations/notion/l
 import { syncNotionOutbox } from "../infra/integrations/notion/sync.js";
 import { Storage, type JobType, type StoredJob } from "../infra/sqlite/storage.js";
 import { configureLogger, getLogger, logError, logInfo } from "../shared/logger.js";
+import { registerActivityRoutes } from "./routes/activity-routes.js";
+import { registerContentRoutes } from "./routes/content-routes.js";
+import { registerRadarRoutes } from "./routes/radar-routes.js";
+import { registerSourceRoutes } from "./routes/source-routes.js";
 
 export async function startService(config: AppConfig): Promise<void> {
   await configureLogger({ level: config.logLevel, file: config.logFile, retentionDays: config.logRetentionDays });
@@ -169,6 +173,11 @@ export function createServiceApp(config: AppConfig, storage: Storage) {
     const job = enqueueJob(storage, "sync-notion", config, () => runJob("sync-notion", config, storage), "api");
     return reply.code(202).send(job);
   });
+
+  registerRadarRoutes(app, storage);
+  registerActivityRoutes(app, storage);
+  registerContentRoutes(app, storage);
+  registerSourceRoutes(app, storage);
 
   app.get("/articles", async () => storage.listArticles());
 
