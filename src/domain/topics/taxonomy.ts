@@ -38,7 +38,7 @@ export const DEFAULT_TOPICS: TopicDefinition[] = [
 ];
 
 export function normalizeTopicKeyword(value: string): string {
-  return value.trim().toLowerCase().replace(/[-_]+/g, " ").replace(/\s+/g, " ");
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
 export function getFallbackTopic(topics: TopicDefinition[]): TopicDefinition {
@@ -53,11 +53,12 @@ export function getFallbackTopic(topics: TopicDefinition[]): TopicDefinition {
 
 export function findCandidateTopics(text: string, topics: TopicDefinition[]): TopicDefinition[] {
   const haystack = normalizeTopicKeyword(text);
+  const boundedHaystack = ` ${haystack} `;
   const matches = topics.filter((topic) => {
     if (topic.fallback) return false;
     return topic.keywords.some((keyword) => {
       const normalized = normalizeTopicKeyword(keyword);
-      return normalized.length > 0 && haystack.includes(normalized);
+      return normalized.length > 0 && boundedHaystack.includes(` ${normalized} `);
     });
   });
   return matches.length > 0 ? matches : [getFallbackTopic(topics)];

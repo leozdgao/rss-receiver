@@ -21,6 +21,25 @@ describe("topic taxonomy", () => {
     expect(candidates.map((topic) => topic.id)).toContain("ai-agents");
   });
 
+  it("finds candidate topics when punctuation separates matching words", () => {
+    const topics = [
+      {
+        id: "platform",
+        name: "Platform",
+        description: "Platform engineering topics.",
+        keywords: ["llm infra"]
+      },
+      getFallbackTopic(DEFAULT_TOPICS)
+    ];
+    const candidates = findCandidateTopics("New LLM: infra practices for production systems", topics);
+    expect(candidates.map((topic) => topic.id)).toContain("platform");
+  });
+
+  it("does not match short keywords inside longer unrelated words", () => {
+    const candidates = findCandidateTopics("A primer on civic planning tools", DEFAULT_TOPICS);
+    expect(candidates).toEqual([getFallbackTopic(DEFAULT_TOPICS)]);
+  });
+
   it("returns fallback topic when no topic matches", () => {
     const candidates = findCandidateTopics("A short note about office chairs", DEFAULT_TOPICS);
     expect(candidates).toEqual([getFallbackTopic(DEFAULT_TOPICS)]);
