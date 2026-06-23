@@ -1,0 +1,21 @@
+test/app/radar.test.ts
+  s_2d93eaf55c05ff::t_50d722034fd3c0 53-115
+src/app/radar/radar-runner.ts
+  s_2d93eaf55c05ff::t_f1e5e5ec9f3011 70,74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "e9f6ce08413c9a2f9d19df28467ac0c632b71015",
+  "prompts": {},
+  "sessions": {
+    "s_2d93eaf55c05ff": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea844-b602-7923-a161-f2d968955b9f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
