@@ -1,0 +1,19 @@
+apps/desktop/src/app/api.ts
+  s_2d93eaf55c05ff::t_4b90b80adf7a74 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.10",
+  "base_commit_sha": "dacb8345026b2ab65788515689743e5aa3d22938",
+  "prompts": {},
+  "sessions": {
+    "s_2d93eaf55c05ff": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ea844-b602-7923-a161-f2d968955b9f",
+        "model": "gpt-5.5"
+      },
+      "human_author": "leozdgao <gzdleo0816@outlook.com>"
+    }
+  }
+}
