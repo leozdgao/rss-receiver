@@ -173,6 +173,13 @@ node dist/cli/index.js server:stop
 node dist/cli/index.js server:start
 ```
 
+## Desktop App Notes
+
+- Desktop UI must call the local API; it must not read SQLite or `.env` directly.
+- Product language should prefer `Source`, `Content Item`, `Activity`, and `Local engine`.
+- Avoid exposing `job`, `outbox`, `pid`, `daemon`, or `server` in default desktop UI copy.
+- Radar is the default desktop surface; Inbox is the second primary workflow.
+
 ## SQLite Notes
 
 Storage is implemented in `src/infra/sqlite/storage.ts`.
