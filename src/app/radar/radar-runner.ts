@@ -67,12 +67,11 @@ function buildTopics(readingQueue: RadarQueueItem[]): RadarTopic[] {
   const groups = new Map<string, RadarQueueItem[]>();
 
   for (const item of readingQueue) {
-    const key = `${item.topicId}\u0000${item.topicName}`;
-    const group = groups.get(key);
+    const group = groups.get(item.topicId);
     if (group) {
       group.push(item);
     } else {
-      groups.set(key, [item]);
+      groups.set(item.topicId, [item]);
     }
   }
 
